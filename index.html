@@ -5268,6 +5268,7 @@ body{ font-family:var(--font-ui) !important; -webkit-font-smoothing:antialiased;
 .mc-td .v-mc-go{ color:#ff8a70 !important; }
 .mc-td:hover{ border-color:rgba(192,57,43,.68) !important; box-shadow:0 20px 44px -18px rgba(192,57,43,.55),0 0 0 1px rgba(192,57,43,.3) !important; }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
 </head>
 <body data-page-node-id="cfphXXvEqLoKmGKhrqLwZv">
 <!-- 移动端/非PC设备检测提示 -->
@@ -47733,5 +47734,423 @@ setTimeout(applyCharacterStats, 4000);
     <div class="pc-title" data-page-node-id="9GThDf9GXcHkQHC24gIcL6">请在 PC 端打开</div>
     <div class="pc-sub" data-page-node-id="E4CjiR8qIygXhH6OgiUcdb">本游戏仅支持桌面端浏览器。请使用电脑以横屏比例（宽 ≥ 高）访问，以获得最佳作战体验。</div>
 </div>
+
+<!-- ===================== WorkBuddy 云服务：登录 / 云存档 / 排行榜 ===================== -->
+<script>
+(function () {
+  'use strict';
+  // —— publicConfig（开通云服务时由平台下发）——
+  var CFG = {
+    endpoint: 'https://combat-strike.app.workbuddy.host',
+    oauthRelayBaseUrl: 'https://www.workbuddy.cn/v2/as/genie-baas/oauth',
+    publishableKey: 'wbpk_U2gGZ6X3byvTxWfJZuuqbz_Qkw5M51Y3iE0mraaV9QyRy4mgqPTEh5g'
+  };
+
+  var cloud = null;
+  try {
+    if (window.WorkBuddyCloud) cloud = window.WorkBuddyCloud.createWorkBuddyCloud(CFG);
+  } catch (e) { console.warn('[Cloud] 初始化失败:', e && e.message); }
+  if (!cloud) { console.warn('[Cloud] SDK 未加载，云服务不可用'); return; }
+
+  var S = { user: null, tab: 'phone', pendingPhone: null, pendingEmail: null, pushing: false, queued: false, lastPush: 0 };
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // —— 轻提示 ——
+  var toastEl = null, toastT = 0;
+  function toast(msg, bad) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.style.cssText = 'position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:1400;' +
+        'padding:9px 18px;border-radius:10px;font:600 13px/1.4 var(--font-ui,sans-serif);letter-spacing:.04em;' +
+        'pointer-events:none;transition:opacity .2s;max-width:80vw';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.style.background = bad ? 'rgba(120,20,32,.92)' : 'rgba(14,42,54,.92)';
+    toastEl.style.color = bad ? '#ffc2cd' : '#bff0ff';
+    toastEl.style.border = '1px solid ' + (bad ? 'rgba(255,90,114,.5)' : 'rgba(37,216,240,.42)');
+    toastEl.style.opacity = '1';
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { if (toastEl) toastEl.style.opacity = '0'; }, 2200);
+  }
+
+  function errText(e) {
+    if (!e) return '未知错误';
+    if (e.code === '42P01') return '云端数据表不存在';
+    if (e.code === '42501') return '没有权限，请先登录';
+    if (e.code === '23505') return '记录已存在';
+    if (e.kind === 'unauthenticated' || e.kind === 'invalid_grant') return '登录已失效，请重新登录';
+    if (e.kind === 'network') return '网络异常，请检查网络后重试';
+    return e.message || String(e);
+  }
+
+  // ================= 登录界面 =================
+  function ensureAuthUI() {
+    if ($('cloud-auth-modal')) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'cloud-auth-modal';
+    wrap.style.cssText = 'display:none;position:fixed;inset:0;z-index:1300;align-items:center;justify-content:center;' +
+      'background:rgba(3,5,11,.8);backdrop-filter:blur(12px);font-family:var(--font-ui,sans-serif)';
+    wrap.innerHTML =
+      '<div style="width:min(430px,94vw);border-radius:16px;border:1px solid rgba(37,216,240,.3);' +
+      'background:linear-gradient(172deg,rgba(26,45,74,.98),rgba(10,18,33,.99));padding:22px 24px;' +
+      'box-shadow:0 30px 80px -20px rgba(0,0,0,.85)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between">' +
+          '<div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:#f2f7ff">云端账号</div>' +
+          '<button id="cam-x" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(125,211,252,.2);' +
+            'background:rgba(255,255,255,.05);color:#9ab0cc;font-size:18px;cursor:pointer;line-height:1">×</button>' +
+        '</div>' +
+        '<div id="cam-signed" style="display:none;margin-top:14px;padding:12px 14px;border-radius:10px;' +
+          'background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.28);color:#cdeedd;font-size:13px"></div>' +
+        '<div id="cam-guest" style="margin-top:14px">' +
+          '<div style="display:flex;gap:6px;margin-bottom:14px">' +
+            '<button class="cam-tab" data-tab="phone" style="flex:1;padding:8px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;' +
+              'background:rgba(37,216,240,.14);border:1px solid rgba(37,216,240,.4);color:#25d8f0">手机号登录</button>' +
+            '<button class="cam-tab" data-tab="email" style="flex:1;padding:8px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;' +
+              'background:rgba(255,255,255,.05);border:1px solid rgba(125,211,252,.2);color:#9ab0cc">邮箱登录</button>' +
+          '</div>' +
+          '<div id="cam-pane" style="display:flex;flex-direction:column;gap:9px"></div>' +
+          '<div id="cam-msg" style="min-height:18px;font-size:12px;color:#ff9aa8"></div>' +
+        '</div>' +
+        '<div style="margin-top:6px;font-size:11.5px;color:#6c83a1;line-height:1.6">' +
+          '登录后：游戏进度自动备份到云端，换设备可恢复；排行榜记录会同步到云端。</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) hideAuth(); });
+    wrap.querySelector('#cam-x').addEventListener('click', hideAuth);
+    wrap.querySelectorAll('.cam-tab').forEach(function (b) {
+      b.addEventListener('click', function () { S.tab = b.getAttribute('data-tab'); renderPane(); });
+    });
+  }
+  function hideAuth() { var m = $('cloud-auth-modal'); if (m) m.style.display = 'none'; }
+  function authMsg(t) { var e = $('cam-msg'); if (e) { e.textContent = t || ''; e.style.color = t ? '#ff9aa8' : '#6c83a1'; } }
+  function field(ph, type, id) {
+    return '<input id="' + id + '" type="' + (type || 'text') + '" placeholder="' + ph + '" ' +
+      'style="width:100%;padding:10px 12px;border-radius:9px;font-size:13px;color:#e8f2ff;' +
+      'background:rgba(6,14,26,.7);border:1px solid rgba(125,211,252,.22);outline:none">';
+  }
+  function btn(txt, id, primary) {
+    return '<button id="' + id + '" style="padding:10px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;' +
+      (primary ? 'background:linear-gradient(120deg,#25d8f0,#5ad2ff);color:#04121c;border:none;'
+               : 'background:rgba(255,255,255,.06);color:#c6d7ef;border:1px solid rgba(125,211,252,.24);') +
+      '">' + txt + '</button>';
+  }
+  function renderPane() {
+    var p = $('cam-pane'); if (!p) return;
+    var tabs = document.querySelectorAll('.cam-tab');
+    tabs.forEach(function (b) {
+      var on = b.getAttribute('data-tab') === S.tab;
+      b.style.background = on ? 'rgba(37,216,240,.14)' : 'rgba(255,255,255,.05)';
+      b.style.borderColor = on ? 'rgba(37,216,240,.4)' : 'rgba(125,211,252,.2)';
+      b.style.color = on ? '#25d8f0' : '#9ab0cc';
+    });
+    authMsg('');
+    if (S.tab === 'phone') {
+      p.innerHTML = field('11 位手机号', 'tel', 'cam-phone') +
+        '<div style="display:flex;gap:8px">' + field('短信验证码', 'text', 'cam-code') + btn('获取验证码', 'cam-send', false) + '</div>' +
+        btn('登录 / 注册', 'cam-go', true);
+      $('cam-send').onclick = sendPhoneCode;
+      $('cam-go').onclick = submitPhone;
+    } else {
+      p.innerHTML = field('邮箱', 'email', 'cam-email') + field('密码（注册时需填写）', 'password', 'cam-pwd') +
+        '<div style="display:flex;gap:8px">' + field('邮箱验证码', 'text', 'cam-ecode') + btn('发送验证码', 'cam-esend', false) + '</div>' +
+        '<div style="display:flex;gap:8px">' + btn('密码登录', 'cam-ego', true) + btn('验证码登录/注册', 'cam-eotp', false) + '</div>';
+      $('cam-esend').onclick = sendEmailCode;
+      $('cam-ego').onclick = submitEmailPwd;
+      $('cam-eotp').onclick = submitEmailOtp;
+    }
+  }
+  function openAuth() { ensureAuthUI(); renderPane(); showSigned(); var m = $('cloud-auth-modal'); if (m) m.style.display = 'flex'; }
+  function showSigned() {
+    var g = $('cam-guest'), s = $('cam-signed');
+    if (!g || !s) return;
+    if (S.user) {
+      g.style.display = 'none'; s.style.display = 'block';
+      var u = S.user;
+      var id = u.phone || u.email || (u.id ? String(u.id).slice(0, 12) : '已登录');
+      s.innerHTML = '已登录：<b>' + esc(id) + '</b><br>' +
+        '<span style="font-size:11.5px;color:#8fb8a8">云端备份已开启 · 进度变更会自动上传</span><br>' +
+        '<button id="cam-out" style="margin-top:9px;padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer;' +
+        'background:rgba(255,90,114,.12);border:1px solid rgba(255,90,114,.4);color:#ff9aa8">退出登录</button>';
+      $('cam-out').onclick = signOut;
+    } else { g.style.display = 'block'; s.style.display = 'none'; }
+  }
+  function refreshUserChip() {
+    try {
+      var el = $('cloud-chip'); if (!el) return;
+      if (S.user) {
+        var id = S.user.phone || S.user.email || '已登录';
+        el.style.display = 'flex';
+        el.querySelector('.cc-name').textContent = String(id).slice(0, 14);
+      } else { el.style.display = 'none'; }
+    } catch (e) {}
+  }
+
+  // ================= 鉴权动作 =================
+  function validPhone(p) { return /^1\d{10}$/.test(p); }
+  async function sendPhoneCode() {
+    var phone = ($('cam-phone').value || '').trim();
+    if (!validPhone(phone)) { authMsg('请输入正确的 11 位手机号'); return; }
+    $('cam-send').disabled = true;
+    try {
+      var r = await cloud.auth.sendOtp({ phone: phone });
+      if (r.error) { authMsg(errText(r.error)); return; }
+      S.pendingPhone = { phone: phone, verificationId: r.data.verificationId, isExistingUser: r.data.isExistingUser };
+      authMsg('验证码已发送');
+      toast('验证码已发送');
+    } catch (e) { authMsg('发送失败：' + errText(e)); }
+    finally { $('cam-send').disabled = false; }
+  }
+  async function submitPhone() {
+    var p = S.pendingPhone;
+    if (!p) { authMsg('请先获取验证码'); return; }
+    var code = ($('cam-code').value || '').trim();
+    if (!code) { authMsg('请输入验证码'); return; }
+    try {
+      var r = await cloud.auth.verifyOtp({ phone: p.phone, verificationId: p.verificationId, isExistingUser: p.isExistingUser, token: code });
+      if (r.error) { authMsg(errText(r.error)); return; }
+      onSignedIn(r.data && r.data.user);
+    } catch (e) { authMsg('登录失败：' + errText(e)); }
+  }
+  async function sendEmailCode() {
+    var email = ($('cam-email').value || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { authMsg('请输入正确的邮箱'); return; }
+    $('cam-esend').disabled = true;
+    try {
+      var r = await cloud.auth.sendOtp({ email: email });
+      if (r.error) { authMsg(errText(r.error)); return; }
+      S.pendingEmail = { email: email, verificationId: r.data.verificationId, isExistingUser: r.data.isExistingUser };
+      authMsg('验证码已发送');
+      toast('验证码已发送');
+    } catch (e) { authMsg('发送失败：' + errText(e)); }
+    finally { $('cam-esend').disabled = false; }
+  }
+  async function submitEmailPwd() {
+    var email = ($('cam-email').value || '').trim();
+    var pwd = ($('cam-pwd').value || '');
+    if (!email || !pwd) { authMsg('请输入邮箱和密码'); return; }
+    try {
+      var r = await cloud.auth.signInWithPassword({ email: email, password: pwd });
+      if (r.error) { authMsg('邮箱或密码不正确'); return; }
+      onSignedIn(r.data && r.data.user);
+    } catch (e) { authMsg('登录失败：' + errText(e)); }
+  }
+  async function submitEmailOtp() {
+    var p = S.pendingEmail;
+    if (!p) { authMsg('请先发送邮箱验证码'); return; }
+    var code = ($('cam-ecode').value || '').trim();
+    var pwd = ($('cam-pwd').value || '').trim();
+    if (!code) { authMsg('请输入验证码'); return; }
+    if (!p.isExistingUser && !pwd) { authMsg('新账号需要设置密码'); return; }
+    try {
+      var r = await cloud.auth.verifyOtp({
+        email: p.email, verificationId: p.verificationId, isExistingUser: p.isExistingUser, token: code,
+        password: p.isExistingUser ? undefined : pwd
+      });
+      if (r.error) { authMsg(errText(r.error)); return; }
+      onSignedIn(r.data && r.data.user);
+    } catch (e) { authMsg('登录失败：' + errText(e)); }
+  }
+  async function signOut() {
+    try { await cloud.auth.signOut(); } catch (e) {}
+    S.user = null; S.pendingPhone = null; S.pendingEmail = null;
+    showSigned(); refreshUserChip();
+    toast('已退出登录');
+  }
+  function onSignedIn(user) {
+    S.user = user || null;
+    hideAuth(); showSigned(); refreshUserChip();
+    toast('登录成功，正在同步云端进度…');
+    pullSave();
+  }
+
+  // ================= 云存档 =================
+  function localSave() {
+    try { return JSON.parse(localStorage.getItem('cs_save_v2') || 'null'); } catch (e) { return null; }
+  }
+  function applySave(obj) {
+    try {
+      if (window._importSaveObject && typeof window._importSaveObject === 'function') return !!window._importSaveObject(obj);
+      localStorage.setItem('cs_save_v2', JSON.stringify(obj));
+      return true;
+    } catch (e) { return false; }
+  }
+  async function pushSave(reason) {
+    if (!S.user) return;
+    var data = localSave();
+    if (!data) return;
+    if (S.pushing) { S.queued = true; return; }
+    S.pushing = true;
+    try {
+      var r = await cloud.database.from('game_saves')
+        .upsert({ save_key: 'main', payload: data, updated_at: new Date().toISOString() }, { onConflict: 'owner_id,save_key' })
+        .select();
+      if (r.error) { toast('云端备份失败：' + errText(r.error), true); return; }
+      S.lastPush = Date.now();
+      if (reason) toast('已备份到云端');
+    } catch (e) { toast('云端备份失败：' + errText(e), true); }
+    finally {
+      S.pushing = false;
+      if (S.queued) { S.queued = false; setTimeout(function () { pushSave(false); }, 400); }
+    }
+  }
+  async function pullSave() {
+    if (!S.user) return;
+    try {
+      var r = await cloud.database.from('game_saves').select('payload, updated_at').eq('save_key', 'main').maybeSingle();
+      if (r.error) { toast('云端读取失败：' + errText(r.error), true); return; }
+      if (!r.data) { toast('云端暂无存档，已创建'); pushSave(false); return; }
+      var remote = r.data.payload, local = localSave();
+      var rt = Number(remote && remote.ts) || 0, lt = Number(local && local.ts) || 0;
+      if (rt > lt) {
+        if (applySave(remote)) toast('已从云端恢复进度');
+      } else {
+        pushSave(false);
+      }
+    } catch (e) { toast('云端读取失败：' + errText(e), true); }
+  }
+
+  // ================= 排行榜 =================
+  async function pushScore(mode, score, wave, kills) {
+    if (!S.user) return;
+    try {
+      var nm = S.user.phone || S.user.email || null;
+      var r = await cloud.database.from('leaderboard')
+        .upsert({ owner_name: nm, mode: mode, score: score | 0, wave: wave | 0, kills: kills | 0, updated_at: new Date().toISOString() },
+          { onConflict: 'owner_id,mode' })
+        .select();
+      if (r.error) { console.warn('[Cloud] 排行榜上报失败', r.error); }
+    } catch (e) { console.warn('[Cloud] 排行榜上报异常', e); }
+  }
+  async function loadBoard(mode) {
+    try {
+      var r = await cloud.database.from('leaderboard')
+        .select('owner_name, mode, score, wave, kills, updated_at')
+        .eq('mode', mode).order('score', { ascending: false }).limit(20);
+      if (r.error) { toast('排行榜读取失败：' + errText(r.error), true); return; }
+      renderBoard(mode, r.data || []);
+    } catch (e) { toast('排行榜读取失败：' + errText(e), true); }
+  }
+  function renderBoard(mode, rows) {
+    var body = $('clb-body'); if (!body) return;
+    var names = { arena: '虚空竞技场', raid: 'BOSS 副本', td: '最后的庇护所' };
+    if (!rows.length) { body.innerHTML = '<div style="padding:26px;text-align:center;color:#6c83a1;font-size:12.5px">云端还没有成绩，登录后来试</div>'; return; }
+    body.innerHTML = rows.map(function (r, i) {
+      var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '<span style="color:#5b6a84">' + (i + 1) + '</span>'));
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid rgba(125,211,252,.08)">' +
+        '<div style="width:30px;text-align:center;font-weight:800;font-size:13px">' + medal + '</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:12.5px;color:#e8f2ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+          esc(r.owner_name || '匿名指挥官') + '</div>' +
+          '<div style="font-size:10.5px;color:#6c83a1">' + esc(names[mode] || mode) + ' · 第 ' + (r.wave | 0) + ' 波 · ' + (r.kills | 0) + ' 杀</div></div>' +
+        '<div style="font-family:var(--font-display);font-size:16px;font-weight:800;color:#ffc94d">' + (r.score | 0).toLocaleString() + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ================= 排行榜界面 =================
+  function ensureBoardUI() {
+    if ($('cloud-board-modal')) return;
+    var m = document.createElement('div');
+    m.id = 'cloud-board-modal';
+    m.style.cssText = 'display:none;position:fixed;inset:0;z-index:1290;align-items:center;justify-content:center;' +
+      'background:rgba(3,5,11,.8);backdrop-filter:blur(12px);font-family:var(--font-ui,sans-serif)';
+    m.innerHTML =
+      '<div style="width:min(470px,94vw);max-height:82vh;overflow:auto;border-radius:16px;border:1px solid rgba(255,201,77,.3);' +
+      'background:linear-gradient(172deg,rgba(30,42,66,.98),rgba(10,18,33,.99));padding:20px 22px;box-shadow:0 30px 80px -20px rgba(0,0,0,.85)">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+          '<div style="font-family:var(--font-display);font-size:19px;font-weight:800;color:#f2f7ff">云端排行榜</div>' +
+          '<button id="clb-x" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(125,211,252,.2);' +
+            'background:rgba(255,255,255,.05);color:#9ab0cc;font-size:18px;cursor:pointer;line-height:1">×</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:10px">' +
+          '<button class="clb-tab" data-m="arena" style="flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;' +
+            'background:rgba(255,255,255,.05);border:1px solid rgba(125,211,252,.2);color:#9ab0cc">虚空竞技场</button>' +
+          '<button class="clb-tab" data-m="raid" style="flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;' +
+            'background:rgba(255,255,255,.05);border:1px solid rgba(125,211,252,.2);color:#9ab0cc">BOSS 副本</button>' +
+          '<button class="clb-tab" data-m="td" style="flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;' +
+            'background:rgba(255,255,255,.05);border:1px solid rgba(125,211,252,.2);color:#9ab0cc">最后的庇护所</button>' +
+        '</div>' +
+        '<div id="clb-body"><div style="padding:26px;text-align:center;color:#6c83a1;font-size:12.5px">加载中…</div></div>' +
+      '</div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) { if (e.target === m) m.style.display = 'none'; });
+    m.querySelector('#clb-x').onclick = function () { m.style.display = 'none'; };
+    m.querySelectorAll('.clb-tab').forEach(function (b) {
+      b.onclick = function () {
+        m.querySelectorAll('.clb-tab').forEach(function (x) {
+          var on = x === b;
+          x.style.background = on ? 'rgba(255,201,77,.14)' : 'rgba(255,255,255,.05)';
+          x.style.borderColor = on ? 'rgba(255,201,77,.45)' : 'rgba(125,211,252,.2)';
+          x.style.color = on ? '#ffc94d' : '#9ab0cc';
+        });
+        loadBoard(b.getAttribute('data-m'));
+      };
+    });
+  }
+  function openBoard() {
+    ensureBoardUI();
+    var m = $('cloud-board-modal'); if (!m) return;
+    m.style.display = 'flex';
+    loadBoard('arena');
+  }
+
+  // ================= 挂到首页 dock =================
+  function mountDock() {
+    try {
+      var dock = document.querySelector('.v-dock');
+      if (!dock || $('cloud-chip')) return;
+      var auth = document.createElement('button');
+      auth.className = 'v-dock-item'; auth.id = 'cloud-chip';
+      auth.style.cssText = 'display:none;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;' +
+        'border-radius:12px;border:1px solid rgba(37,216,240,.22);background:rgba(37,216,240,.06);cursor:pointer';
+      auth.innerHTML = '<span style="font-size:18px">☁️</span><span class="cc-name" style="font-size:11px;color:#9ab0cc">未登录</span>';
+      auth.onclick = openAuth;
+      dock.appendChild(auth);
+
+      var lb = document.createElement('button');
+      lb.className = 'v-dock-item';
+      lb.style.cssText = 'flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:12px;' +
+        'border:1px solid rgba(255,201,77,.22);background:rgba(255,201,77,.06);cursor:pointer';
+      lb.innerHTML = '<span style="font-size:18px">🏆</span><span style="font-size:11px;color:#9ab0cc">排行榜</span>';
+      lb.onclick = openBoard;
+      dock.appendChild(lb);
+    } catch (e) { console.warn('[Cloud] dock 挂载失败', e); }
+  }
+
+  // ================= 启动：会话恢复 + 钩子 =================
+  async function boot() {
+    mountDock();
+    try {
+      var r = await cloud.auth.getSession();
+      S.user = (r && !r.error) ? (r.data && (r.data.user || (r.data.session && r.data.session.user))) : null;
+      if (S.user) { showSigned(); refreshUserChip(); pullSave(); }
+    } catch (e) { /* 未登录属正常情况 */ }
+
+    // 进度变更 → 云端备份（节流 20s）
+    var last = Date.now();
+    setInterval(function () {
+      if (!S.user) return;
+      var d = localSave();
+      if (!d) return;
+      if (d.ts && d.ts !== S.lastSeenTs) {
+        S.lastSeenTs = d.ts;
+        if (Date.now() - last > 20000) { last = Date.now(); pushSave(false); }
+      }
+    }, 8000);
+
+    window.CloudAPI = {
+      pushSave: pushSave, pullSave: pullSave, pushScore: pushScore, loadBoard: loadBoard,
+      openAuth: openAuth, openBoard: openBoard,
+      isSignedIn: function () { return !!S.user; },
+      user: function () { return S.user; }
+    };
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
+
 </body>
 </html>
