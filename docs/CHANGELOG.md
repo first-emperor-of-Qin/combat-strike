@@ -19,3 +19,21 @@
 - 修复龙骑兵：初始不再默认装备；冰雀射速 1 秒 3 次 → 1 次
 - 修复相位行者：补齐 `WEAPON_FULL_DESC` 条目（商城无法购买、价格异常、图鉴描述不全）
 - 下架实验模式：猎杀令 BOUNTY、撤离行动 EXTRACTION、荒岛行动 BR
+
+## 2026-10-04（云服务）
+
+### 新增
+- **WorkBuddy 云服务接入**（applicationId `wbapp_U2gGZ6X3byvTxWfJZuuqbz`）
+  - CDN 引入 `@tencent-ai/workbuddy-cloud-sdk@dev`，用平台下发的 `publicConfig`（endpoint / publishableKey / oauthRelayBaseUrl）初始化
+  - **登录**：手机号验证码登录注册 + 邮箱密码登录 + 邮箱验证码注册（`cloud.auth`，无匿名登录）
+  - **云存档**：`game_saves` 表按 `(owner_id, save_key)` upsert；登录后自动拉取，与本地 `cs_save_v2` 比较 `ts` 后决定恢复或回传；进度变更节流上传
+  - **云端排行榜**：`leaderboard` 表，竞技场 / 副本 / 塔防三榜，公开读、本人写
+  - 首页 dock 新增「☁️ 云端账号」「🏆 排行榜」入口
+- 数据表（RLS 已开启，策略见 `docs/ARCHITECTURE.md`）：
+  - `game_saves` — `owner_id TEXT DEFAULT auth.uid()`，仅本人读写
+  - `leaderboard` — 公开读，`owner_id` 写保护
+
+### 验证
+- 线上 `GET /.cloud/database/rest/leaderboard` 返回 200，排行榜正常渲染空态
+- 未登录时不产生任何写请求（鉴权门控生效）
+- 8 个 script 块 0 语法错；页面 0 运行时错误
