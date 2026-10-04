@@ -3,3 +3,6 @@
 .workbuddy/*.local
 node_modules/
 .DS_Store
+
+# 会话/工具内部产物
+.zcode/
