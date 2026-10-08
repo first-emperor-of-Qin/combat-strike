@@ -6,3 +6,6 @@ node_modules/
 
 # 会话/工具内部产物
 .zcode/
+
+# 本地交付文档（不入库）
+docs/UI-UX-PROMPTS.md
