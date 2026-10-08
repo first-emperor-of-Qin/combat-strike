@@ -40,7 +40,6 @@ python3 -m http.server 8000    # → http://localhost:8000
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 代码结构、数据表、坐标系与单位约定、扩展方式 |
 | [docs/PLAYBOOK.md](docs/PLAYBOOK.md) | **更新策略** — 改代码的强制流程、验证方法、部署流程 |
-| [docs/UI-UX-PROMPTS.md](docs/UI-UX-PROMPTS.md) | **商业级 UI 优化提示词集**（19 项，可直接复用） |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | 变更记录 |
 | `.workbuddy/memory/` | 逐日开发日志与长期记忆（架构铁律 / 踩坑记录） |
 
