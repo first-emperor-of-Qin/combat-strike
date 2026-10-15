@@ -10923,6 +10923,7 @@ function initAll() {
         'juexian':         { name:'绝弦之诗',   icon:'🎻', quality:5,  qualityLabel:'5级', category:'战术武器',   baseDmg:'弦矢160/发', fireRate:'3发/秒',  magazine:'无(按键5切换)', activeSkill:'毁灭形态[中键]',      passiveSkill:'弦韵共鸣(HP越低叠层越快)+乐感', slot:'5j', slotType:'tactical' },
         'yanmo':           { name:'炎魔灭世',   icon:'🔥', quality:6,  qualityLabel:'6级', category:'战术武器',   baseDmg:'炎魔火箭200/发', fireRate:'2.5发/秒', magazine:'无(按键5切换)', activeSkill:'炎魔领域[中键]',      passiveSkill:'磁能增幅(起始+20% 每秒+2.5% 最高+220%)+炎魔火箭(追踪/爆炸/磁缚定身+灼烧)', slot:'5y', slotType:'tactical' },
         'chronoterminus':  { name:'终焉时序',   icon:'⏳', quality:7,  qualityLabel:'7级', category:'战术武器',   baseDmg:'时序飞刃250/发', fireRate:'3发/秒', magazine:'无(按键5切换)', activeSkill:'时停领域[中键]',      passiveSkill:'时序增幅(起始+30% 每秒+3% 最高+280%)+时序飞刃(穿透/追踪/减速)', slot:'5ct', slotType:'tactical' },
+        'nullsingularity': { name:'虚数奇点',  icon:'🕳', quality:9,  qualityLabel:'9级', category:'战术武器',   baseDmg:'相位弹2600/发',  fireRate:'4.5发/秒', magazine:'无(按键5切换)', activeSkill:'奇点坍缩[中键]+虚数行走[右键]', passiveSkill:'奇点层数易伤(最高+60%)+奇点护盾+虚数同调', slot:'5ns', slotType:'tactical' },
     };
 
     // ====== 由统一品级表自动生成 WEAPON_STATS（单一数据源，杜绝同质化） ======
@@ -10979,6 +10980,18 @@ function initAll() {
         'starcore':        { tagline:'5级战术武器 — 璀璨星核，星海庇护', typeLabel:'战术武器', bonus:'生命+30000 | 魂力+6000 | 移速+2 | 能量+40 | 暴击+3% | 每秒回复生命+500 | 每秒回复护盾+500 | 每秒回复能量+2', passives:['星辉：伤害增幅初始即+25%，每秒自动累加2%，最高+200%（高于数据魔方初始0%/每秒1%/上限100%）；死亡后从25%重新累加','星弹：星环激活期间自动追踪准星前方敌人，每0.5秒发射一发星弹（120基础伤害，落点4米范围溅射），伤害享受星辉增幅'], actives:['星环[中键]：冷却22秒，持续12秒——移速+50%、免疫眩晕/冰冻/禁锢、受到的所有伤害降低50%，期间持续自动发射追踪星弹'], price:30000 },
         'juexian':         { tagline:'5级战术武器 — 绝弦之诗，终焉弦音', typeLabel:'战术武器', bonus:'生命+90000 | 魂力+17000 | 移速+2 | 能量+110 | 暴击+6% | 每秒回复生命+1100 | 每秒回复护盾+1100 | 每秒回复能量+8', passives:['弦韵共鸣：伤害增幅初始+15%，每秒+2%（HP<50%叠层×2、HP<25%×3），最高+180%；死亡重置','乐感：毁灭形态期间自动叠加乐感，HP越低叠层越快，每层追加伤害增幅'], actives:['毁灭形态[中键]：冷却20秒，持续14秒——移速+50%、免疫眩晕/冰冻/禁锢/减速、受到伤害-60%，期间自动追踪弦矢（160基础伤害/0.4秒）；周期抽取灵韵值提升灵韵增幅等级（每层+15%伤害，最高+75%），首启必满灵韵[绝弦]'], price:60000 },
         'chronoterminus':  { tagline:'7级战术武器 — 终焉时序，逆乱流光', typeLabel:'战术武器', bonus:'生命+50000 | 魂力+10000 | 移速+3 | 能量+50 | 暴击+4% | 每秒回复生命+1000 | 每秒回复护盾+1000 | 每秒回复能量+3', passives:['时序增幅：伤害增幅初始+30%，每秒+3%，最高+280%（全战术武器最高）；死亡重置','时序飞刃：时停领域期间自动追踪敌人，飞刃可穿透多个目标，命中施加减速'], actives:['时停领域[中键]：冷却20秒，持续14秒——移速+70%、免疫眩晕/冰冻/禁锢/减速、受到伤害-55%，期间持续自动发射穿透时序飞刃（250基础伤害/0.35秒），命中敌人减速50%持续2.5秒'], price:60000 },
+        'nullsingularity': { tagline:'9级战术武器 — 虚数奇点，吞噬万象', typeLabel:'战术武器（奇点操控）',
+            bonus:'生命+120000 | 魂力+30000 | 移速+5 | 能量+80 | 暴击+8% | 每秒回复生命+3000 | 每秒回复护盾+3000 | 每秒回复能量+5',
+            passives:[
+                '奇点层数：相位弹命中给目标叠加奇点标记（最多 5 层，持续 6 秒），每层使本武器对该目标伤害 +12%',
+                '奇点护盾：脱离战斗 2.5 秒后，护盾每秒回充最大护盾的 3%（上限 25%）',
+                '虚数同调：奇点层数叠满 5 层时，本武器对该目标伤害额外 +15%（与层数易伤相乘）'
+            ],
+            actives:[
+                '奇点坍缩[中键]：在准星前方 28 米处撕开半径 9 米的奇点，持续 5 秒。领域内敌人被持续牵引向奇点、移速降低 70%，并每 0.5 秒受到「2400 × 当前层数」的坍缩伤害。释放瞬间若领域内存在 3 个及以上敌人，触发链式奇点并返还 50% 冷却。冷却 18 秒',
+                '虚数行走[右键]：向准星方向相位传送最多 15 米（可穿墙），落地获得 1.5 秒无敌，清除自身减速/定身/眩晕，并在落地处生成 1.6 秒小型奇点造成范围伤害。冷却 6 秒'
+            ],
+            price: 999999 },
         'yanmo':           { tagline:'6级战术武器 — 炎魔灭世，焚尽八荒', typeLabel:'战术武器', bonus:'生命+50000 | 魂力+10000 | 移速+3 | 能量+50 | 暴击+4% | 每秒回复生命+1000 | 每秒回复护盾+1000 | 每秒回复能量+3', passives:['磁能增幅：伤害增幅初始+20%，每秒+2.5%，最高+220%；死亡重置','炎魔火箭：炎魔领域期间自动追踪敌人，命中爆炸造成范围伤害并施加磁缚定身+灼烧'], actives:['炎魔领域[中键]：冷却18秒，持续12秒——移速+50%、免疫眩晕/冰冻/禁锢/减速、受到伤害-50%，期间持续自动发射追踪炎魔火箭（200基础伤害/0.4秒，爆炸范围5米，命中施加减/定身+灼烧）'], price:35000 },
     };
 
@@ -11079,6 +11092,7 @@ function initAll() {
         'juexian':         { get baseDmg() { return JUEXIAN_BULLET_DMG; }, unit: '/发', label: '弦矢伤害' },
         'yanmo':           { get baseDmg() { return YANMO_ROCKET_DMG; }, unit: '/发', label: '炎魔火箭伤害' },
         'chronoterminus':  { get baseDmg() { return CHRONO_BLADE_DMG; }, unit: '/发', label: '时序飞刃伤害' },
+        'nullsingularity': { get baseDmg() { return NS_BASE_DMG; }, unit: '/发', label: '相位弹伤害' },
         'ponghong':        { get baseDmg() { return PONGHONG_BASE_DMG; }, unit: '/发', label: '基础伤害' },
     };
 
@@ -11101,6 +11115,7 @@ function initAll() {
         if (key === 'juexian') return '弦矢'+_adjBase('juexian', JUEXIAN_BULLET_DMG)+'/发 x2.5 | 弦韵共鸣最高+180% | 毁灭形态额外+75%';
         if (key === 'yanmo') return '炎魔火箭'+_adjBase('yanmo', YANMO_ROCKET_DMG)+'/发 x2.5 | 磁能增幅最高+220% | 炎魔领域磁缚定身+灼烧';
         if (key === 'chronoterminus') return '时序飞刃'+_adjBase('chronoterminus', CHRONO_BLADE_DMG)+'/发(穿透) | 时序增幅最高+280% | 时停领域移速+70%/免控/减伤55% | 命中减速50%';
+        if (key === 'nullsingularity') return '相位弹'+_adjBase('nullsingularity', NS_BASE_DMG)+'/发 | 层数易伤最高+60% | 奇点坍缩牵引+减速70% | 虚数行走传送15m';
         if (key === 'terminus') return '暗能'+_adjBase('terminus', cat.baseDmg)+'/发(贯穿) | 横行无忌DPS≈'+Math.round(_adjBase('terminus', TERMINUS_BASE_DMG)*TERMINUS_RAMPAGE_DMG_PERCENT/100*TERMINUS_RAMPAGE_FREQ)+' | 双子之影自动攻击';
         if (key === 'thunderex') return '等离子'+_adjBase('thunderex', cat.baseDmg)+'/发(贯穿) | 雷切处决 | 圣化领域治疗+护盾 | 闪电链+电浆球';
         if (key === 'tianfa') return '雷霆'+_adjBase('tianfa', cat.baseDmg)+'/发(落雷) | 诺法雷落雷1000%系数 | 神之注视+25% | 神裁领域全场落雷+治疗护盾 | 压缩弹500%系数';
@@ -14655,6 +14670,318 @@ function initAll() {
     function chronoBossSpeedMul() {
         return isChronoTimeStopActive() ? 0.3 : 1;
     }
+
+    // ====== 虚数奇点 NULLSINGULARITY（9级战术武器 · 奇点操控） ======
+    // 机制：奇点层数易伤 → 相位弹穿透 → 奇点坍缩领域（牵引/减速/层数引爆/链式）→ 虚数行走传送 → 奇点护盾
+    const NS_BASE_DMG      = 2600;      // 相位弹基础伤害
+    const NS_INTERVAL      = 0.22;      // 发射间隔（秒）→ 约 4.5 发/秒
+    const NS_RANGE         = 130;       // 索敌范围（米）
+    const NS_AIM_COS       = 0.995;     // 自瞄容差（约 5.7°）
+    const NS_MAX_STACKS    = 5;         // 奇点层数上限
+    const NS_STACK_AMP     = 0.12;      // 每层本武器伤害 +12%
+    const NS_FULL_AMP      = 0.15;      // 叠满 5 层额外 +15%
+    const NS_STACK_DUR     = 6.0;       // 层数持续（秒）
+    const NS_SKILL_CD      = 18.0;      // 奇点坍缩冷却
+    const NS_SKILL_DUR     = 5.0;       // 领域持续
+    const NS_SKILL_R       = 9.0;       // 领域半径
+    const NS_SKILL_RANGE   = 28.0;      // 领域落点距离
+    const NS_SKILL_DMG     = 2400;      // 每层每次坍缩伤害
+    const NS_SKILL_TICK    = 0.5;       // 坍缩判定间隔
+    const NS_SKILL_SLOW    = 0.70;      // 领域内减速 70%
+    const NS_DASH_CD       = 6.0;       // 虚数行走冷却
+    const NS_DASH_DIST     = 15.0;      // 传送距离
+    const NS_DASH_INV      = 1.5;       // 传送后无敌时间
+    const NS_MINI_DUR      = 1.6;       // 落地小奇点持续
+    const NS_MINI_DMG      = 5200;      // 落地小奇点伤害
+    const NS_SHIELD_RATE   = 0.03;      // 护盾每秒回充比例（最大护盾）
+    const NS_SHIELD_CAP    = 0.25;      // 护盾上限（最大护盾）
+    const NS_COMBAT_DELAY  = 2.5;       // 脱战多久后开始回盾
+    let nsSkillCd = 0, nsFieldTimer = 0, nsFieldTick = 0, nsChain = false;
+    let nsFieldPos = null, nsField = null, nsDashCd = 0, nsCombatT = 0, nsShieldUiT = 0;
+    let nsMini = null, nsMiniTimer = 0, nsWeaponGroup = null;
+
+    function nsAmp(e) {
+        const st = Math.min(NS_MAX_STACKS, (e && e.nsStacks) || 0);
+        let m = 1 + st * NS_STACK_AMP;
+        if (st >= NS_MAX_STACKS) m += NS_FULL_AMP;
+        return m;
+    }
+    // 叠加层数并结算本武器伤害
+    function nsHit(e, base, add) {
+        if (!e || e.health <= 0) return 0;
+        e.nsStacks = Math.min(NS_MAX_STACKS, (e.nsStacks || 0) + (add || 1));
+        e.nsStackT = NS_STACK_DUR;
+        const dmg = Math.round(base * nsAmp(e));
+        try { damageEnemy(e, dmg, e.mesh.position.clone(), { isHeadshot: false, sourceWeapon: 'nullsingularity' }); } catch (err) {}
+        return dmg;
+    }
+    // 索敌：沿准星射线取最近敌人
+    function nsFindTarget() {
+        const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+        const o = camera.position;
+        let best = null, bestD = 1e9;
+        for (let i = 0; i < enemies.length; i++) {
+            const e = enemies[i];
+            if (!e || !e.mesh || e.health <= 0) continue;
+            const p = e.mesh.position;
+            const dx = p.x - o.x, dy = (p.y + 1.3) - o.y, dz = p.z - o.z;
+            const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (d > NS_RANGE || d < 0.001) continue;
+            if ((dx * dir.x + dy * dir.y + dz * dir.z) / d < NS_AIM_COS) continue;
+            if (d < bestD) { bestD = d; best = e; }
+        }
+        return best;
+    }
+    // 弹道视觉（拖尾线段，对象池化）
+    let nsTracers = [];
+    function nsTracer(from, to, color) {
+        try {
+            const g = new THREE.BufferGeometry().setFromPoints([from.clone(), to.clone()]);
+            const m = new THREE.LineBasicMaterial({ color: color || 0xb28bff, transparent: true, opacity: 0.95 });
+            const line = new THREE.Line(g, m);
+            scene.add(line);
+            nsTracers.push({ line: line, life: 0.16 });
+        } catch (e) {}
+    }
+    function nsUpdateTracers(delta) {
+        for (let i = nsTracers.length - 1; i >= 0; i--) {
+            const t = nsTracers[i];
+            t.life -= delta;
+            if (t.life <= 0) {
+                try { scene.remove(t.line); t.line.geometry.dispose(); t.line.material.dispose(); } catch (e) {}
+                nsTracers.splice(i, 1);
+            } else {
+                t.line.material.opacity = Math.max(0, t.life / 0.16);
+            }
+        }
+    }
+    // 奇点领域视觉（地面漩涡 + 吸积盘 + 光柱）
+    function spawnNsFieldMesh(pos) {
+        try {
+            const g = new THREE.Group();
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(NS_SKILL_R, NS_SKILL_R * 0.4, 3.2, 40, 1, true),
+                new THREE.MeshBasicMaterial({ color: 0x7c4dff, transparent: true, opacity: 0.30, side: THREE.DoubleSide, depthWrite: false }));
+            disc.position.y = 1.6; g.add(disc);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(NS_SKILL_R * 0.72, 0.14, 8, 48),
+                new THREE.MeshBasicMaterial({ color: 0xb28bff, transparent: true, opacity: 0.85 }));
+            ring.rotation.x = Math.PI / 2; ring.position.y = 0.16; g.add(ring);
+            const core = new THREE.Mesh(new THREE.SphereGeometry(1.5, 18, 14),
+                new THREE.MeshBasicMaterial({ color: 0x120a26 }));
+            core.position.y = 1.8; g.add(core);
+            const halo = new THREE.Mesh(new THREE.SphereGeometry(2.0, 18, 14),
+                new THREE.MeshBasicMaterial({ color: 0xb28bff, transparent: true, opacity: 0.35 }));
+            halo.position.y = 1.8; g.add(halo);
+            const light = new THREE.PointLight(0x9b6bff, 3.0, NS_SKILL_R * 2.2);
+            light.position.y = 2.0; g.add(light);
+            g.userData.disc = disc; g.userData.ring = ring; g.userData.core = core; g.userData.halo = halo;
+            g.position.copy(pos);
+            scene.add(g);
+            return g;
+        } catch (e) { return null; }
+    }
+    function nsRemoveField() {
+        try {
+            if (!nsField) return;
+            scene.remove(nsField);
+            nsField.traverse(function (c) { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+            nsField = null;
+        } catch (e) {}
+        // 恢复被减速敌人的移速
+        try {
+            for (let i = 0; i < enemies.length; i++) {
+                const e = enemies[i];
+                if (e && e._nsInField) { e.speed = (e._nsOrigSpeed != null ? e._nsOrigSpeed : e.speed); e._nsInField = false; e._nsOrigSpeed = null; }
+            }
+        } catch (e) {}
+    }
+    // 中键：奇点坍缩
+    function nsCastSkill() {
+        if (nsSkillCd > 0 || isDead) return;
+        nsSkillCd = NS_SKILL_CD;
+        const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+        let dist = NS_SKILL_RANGE;
+        try {
+            const rc = new THREE.Raycaster(camera.position.clone(), dir, 0.1, NS_SKILL_RANGE);
+            const hits = rc.intersectObjects(obstacleMeshes, false);
+            if (hits && hits.length) dist = Math.max(7, hits[0].distance);
+        } catch (e) {}
+        const pos = camera.position.clone().addScaledVector(dir, dist);
+        pos.y = 0;
+        nsFieldPos = pos; nsFieldTimer = NS_SKILL_DUR; nsFieldTick = 0; nsChain = false;
+        nsRemoveField();
+        nsField = spawnNsFieldMesh(pos);
+        // 链式奇点：领域周边 ≥3 敌人 → 返还 50% CD
+        let cnt = 0;
+        try {
+            for (let i = 0; i < enemies.length; i++) {
+                const e = enemies[i];
+                if (!e || !e.mesh || e.health <= 0) continue;
+                if (Math.hypot(e.mesh.position.x - pos.x, e.mesh.position.z - pos.z) < NS_SKILL_R + 5) cnt++;
+            }
+        } catch (e) {}
+        if (cnt >= 3) { nsChain = true; nsSkillCd *= 0.5; }
+    }
+    // 右键：虚数行走
+    function nsDash() {
+        if (nsDashCd > 0 || isDead) return;
+        nsDashCd = NS_DASH_CD;
+        const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+        let dist = NS_DASH_DIST;
+        try {
+            const rc = new THREE.Raycaster(camera.position.clone(), dir, 0.1, NS_DASH_DIST);
+            const hits = rc.intersectObjects(obstacleMeshes, false);
+            if (hits && hits.length) dist = Math.max(2.2, hits[0].distance - 0.7);
+        } catch (e) {}
+        const from = camera.position.clone();
+        camera.position.addScaledVector(dir, dist);
+        camera.position.x = Math.max(BOUNDS.minX + 1.5, Math.min(BOUNDS.maxX - 1.5, camera.position.x));
+        camera.position.z = Math.max(BOUNDS.minZ + 1.5, Math.min(BOUNDS.maxZ - 1.5, camera.position.z));
+        // 传送残影 + 落地小奇点
+        nsTracer(from, camera.position.clone(), 0x9b6bff);
+        try {
+            if (nsMini) { scene.remove(nsMini); nsMini.traverse(function (c) { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); nsMini = null; }
+            const g = new THREE.Group();
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(3.4, 0.12, 8, 32), new THREE.MeshBasicMaterial({ color: 0x7c4dff, transparent: true, opacity: 0.9 }));
+            ring.rotation.x = Math.PI / 2; ring.position.y = 0.14; g.add(ring);
+            const core = new THREE.Mesh(new THREE.SphereGeometry(1.1, 14, 12), new THREE.MeshBasicMaterial({ color: 0x120a26 }));
+            core.position.y = 1.4; g.add(core);
+            g.position.copy(camera.position); g.position.y = 0;
+            scene.add(g); nsMini = g; nsMiniTimer = NS_MINI_DUR;
+        } catch (e) {}
+        isInvincible = true; invincibleTimer = NS_DASH_INV;
+        try { window._playerSlowed = false; window._playerRooted = false; window._playerStunned = false; } catch (e) {}
+    }
+    // 3D 手持模型：悬浮奇点核心 + 吸积环
+    function createNullSingularityModel() {
+        if (nsWeaponGroup) return;
+        try {
+            const g = new THREE.Group();
+            const core = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 14),
+                new THREE.MeshStandardMaterial({ color: 0x0b0716, emissive: 0x6b3fd4, emissiveIntensity: 1.1, metalness: 0.6, roughness: 0.25 }));
+            g.add(core);
+            const ringA = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.022, 8, 36),
+                new THREE.MeshStandardMaterial({ color: 0xb28bff, emissive: 0xb28bff, emissiveIntensity: 1.7, metalness: 0.8, roughness: 0.2 }));
+            ringA.rotation.x = Math.PI / 2.4; g.add(ringA);
+            const ringB = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.016, 8, 30),
+                new THREE.MeshStandardMaterial({ color: 0x25d8f0, emissive: 0x25d8f0, emissiveIntensity: 1.6, metalness: 0.8, roughness: 0.2 }));
+            ringB.rotation.y = Math.PI / 2; g.add(ringB);
+            const glow = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 12),
+                new THREE.MeshBasicMaterial({ color: 0x7c4dff, transparent: true, opacity: 0.16 }));
+            g.add(glow);
+            const light = new THREE.PointLight(0x9b6bff, 1.4, 6); g.add(light);
+            g.userData.ringA = ringA; g.userData.ringB = ringB; g.userData.core = core;
+            g.position.set(0.22, -0.18, -0.5);
+            camera.add(g);
+            nsWeaponGroup = g;
+        } catch (e) {}
+    }
+    function nsReset() {
+        nsSkillCd = 0; nsFieldTimer = 0; nsFieldTick = 0; nsDashCd = 0; nsCombatT = 0;
+        nsRemoveField();
+        try {
+            if (nsMini) { scene.remove(nsMini); nsMini.traverse(function (c) { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); nsMini = null; nsMiniTimer = 0; }
+            for (let i = nsTracers.length - 1; i >= 0; i--) {
+                try { scene.remove(nsTracers[i].line); nsTracers[i].line.geometry.dispose(); nsTracers[i].line.material.dispose(); } catch (e) {}
+            }
+            nsTracers = [];
+        } catch (e) {}
+    }
+    // 主更新：自动开火 / 领域 / 传送后小奇点 / 护盾回充 / 层数衰减
+    function updateNullSingularity(delta) {
+        if (equippedTactical !== 'nullsingularity' || (!ownedWeapons['nullsingularity'] && !wzlbActive)) {
+            if (nsFieldTimer > 0 || nsField || nsMiniTimer > 0 || nsTracers.length) nsReset();
+            return;
+        }
+        // 冷却
+        if (nsSkillCd > 0) nsSkillCd -= delta;
+        if (nsDashCd > 0) nsDashCd -= delta;
+        // 层数衰减
+        let inCombat = false;
+        for (let i = 0; i < enemies.length; i++) {
+            const e = enemies[i];
+            if (!e || e.health <= 0) continue;
+            if (e.nsStackT > 0) { e.nsStackT -= delta; if (e.nsStackT <= 0) { e.nsStacks = 0; } }
+            if (e.mesh && e.mesh.position.distanceTo(camera.position) < 30) inCombat = true;
+        }
+        nsCombatT = inCombat ? 0 : (nsCombatT + delta);
+        // 自动发射相位弹
+        nsFireT = (nsFireT || 0) - delta;
+        if (nsFireT <= 0) {
+            nsFireT = NS_INTERVAL;
+            const tgt = nsFindTarget();
+            if (tgt) {
+                const from = camera.position.clone();
+                const to = tgt.mesh.position.clone(); to.y += 1.3;
+                nsTracer(from, to, 0xb28bff);
+                nsHit(tgt, NS_BASE_DMG, 2);
+            }
+        }
+        // 奇点领域
+        if (nsFieldTimer > 0) {
+            nsFieldTimer -= delta;
+            nsFieldTickAcc = (nsFieldTickAcc || 0) - delta;
+            if (nsField) {
+                nsField.position.lerp(nsFieldPos, Math.min(1, delta * 8));
+                nsField.userData.ring.rotation.z += delta * 1.8;
+                nsField.userData.core.rotation.y += delta * 3.0;
+                const s = 1 + Math.sin(performance.now() * 0.006) * 0.06;
+                nsField.userData.halo.scale.set(s, s, s);
+            }
+            if (nsFieldTickAcc <= 0) {
+                nsFieldTickAcc = NS_SKILL_TICK;
+                try {
+                    for (let i = 0; i < enemies.length; i++) {
+                        const e = enemies[i];
+                        if (!e || !e.mesh || e.health <= 0) continue;
+                        const p = e.mesh.position;
+                        const d = Math.hypot(p.x - nsFieldPos.x, p.z - nsFieldPos.z);
+                        if (d > NS_SKILL_R) {
+                            if (e._nsInField) { e.speed = (e._nsOrigSpeed != null ? e._nsOrigSpeed : e.speed); e._nsInField = false; e._nsOrigSpeed = null; }
+                            continue;
+                        }
+                        // 牵引向奇点
+                        if (d > 0.6) { const k = Math.min(0.42, 2.6 / Math.max(d, 1)); p.x -= (p.x - nsFieldPos.x) * k; p.z -= (p.z - nsFieldPos.z) * k; }
+                        // 减速（保存并替换移速）
+                        if (!e._nsInField) { e._nsOrigSpeed = e.speed; e._nsInField = true; }
+                        e.speed = (e._nsOrigSpeed != null ? e._nsOrigSpeed : e.speed) * (1 - NS_SKILL_SLOW);
+                        // 坍缩伤害（层数越高越痛）
+                        const st = Math.min(NS_MAX_STACKS, e.nsStacks || 0);
+                        const dmg = Math.round(NS_SKILL_DMG * Math.max(1, st));
+                        try { damageEnemy(e, dmg, p.clone(), { isHeadshot: false, sourceWeapon: 'nullsingularity' }); } catch (err) {}
+                    }
+                } catch (e) {}
+            }
+        } else if (nsField || nsFieldTickAcc > 0) {
+            nsFieldTickAcc = 0;
+            nsRemoveField();
+        }
+        // 落地小奇点
+        if (nsMiniTimer > 0) {
+            nsMiniTimer -= delta;
+            if (nsMini && nsMini.userData) { nsMini.children[1].rotation.y += delta * 2.4; }
+            try {
+                for (let i = 0; i < enemies.length; i++) {
+                    const e = enemies[i];
+                    if (!e || !e.mesh || e.health <= 0) continue;
+                    if (Math.hypot(e.mesh.position.x - camera.position.x, e.mesh.position.z - camera.position.z) < 4.0) {
+                        try { damageEnemy(e, NS_MINI_DMG, e.mesh.position.clone(), { isHeadshot: false, sourceWeapon: 'nullsingularity' }); } catch (err) {}
+                    }
+                }
+            } catch (e) {}
+            if (nsMiniTimer <= 0 && nsMini) { scene.remove(nsMini); nsMini.traverse(function (c) { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); nsMini = null; }
+        }
+        // 奇点护盾：脱战回充
+        try {
+            const cap = PLAYER_MAX_SHIELD_EFFECTIVE * NS_SHIELD_CAP;
+            if (nsCombatT > NS_COMBAT_DELAY && playerShield < cap) {
+                playerShield = Math.min(cap, playerShield + PLAYER_MAX_SHIELD_EFFECTIVE * NS_SHIELD_RATE * delta);
+                nsShieldUiT -= delta;
+                if (nsShieldUiT <= 0) { nsShieldUiT = 0.5; updateShieldUI(); }
+            }
+        } catch (e) {}
+        nsUpdateTracers(delta);
+    }
+    let nsFireT = 0, nsFieldTickAcc = 0;
 
     // ==================== 伙伴系统 COMPANION（BOSS 协战） ====================
     // 设计要点：
@@ -29621,6 +29948,12 @@ window.LEVELS = LEVELS;
             skillEDisplay.querySelector('.skill-label').textContent = '炎魔领域 [中键]';
             skillEDisplay.querySelector('.skill-text').textContent = '🔥';
             if (skillEActive) { skillEActive = false; removeGunLightningEffect(); skillECooldown = SKILL_E_COOLDOWN; }
+        } else if (currentWeaponSlot === 5 && equippedTactical === 'nullsingularity') {
+            try { nsCastSkill(); } catch (e) { console.warn('nsCastSkill:', e && e.message); }
+            skillEDisplay.style.display = '';
+            skillEDisplay.querySelector('.skill-label').textContent = '奇点坍缩 [中键]';
+            skillEDisplay.querySelector('.skill-text').textContent = '🕳';
+            if (skillEActive) { skillEActive = false; removeGunLightningEffect(); skillECooldown = SKILL_E_COOLDOWN; }
         } else if (currentWeaponSlot === 5 && equippedTactical === 'chronoterminus') {
             skillEDisplay.style.display = '';
             skillEDisplay.querySelector('.skill-label').textContent = '时停领域 [中键]';
@@ -36848,6 +37181,7 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
         if (slot === 5 && equippedTactical === 'yanmo' && (ownedWeapons['yanmo'] || wzlbActive)) {
             if (!yanmoWeaponGroup) createYanmoModel();
         }
+        if (slot === 5 && equippedTactical === 'nullsingularity') { try { nsReset(); } catch (e) {} }
         if (slot === 5 && equippedTactical === 'chronoterminus' && (ownedWeapons['chronoterminus'] || wzlbActive)) {
             if (!chronoWeaponGroup) createChronoModel();
         }
@@ -36926,6 +37260,8 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
         if (juexianWeaponGroup) juexianWeaponGroup.visible = (currentWeaponSlot === 5 && equippedTactical === 'juexian');
         if (yanmoWeaponGroup) yanmoWeaponGroup.visible = (currentWeaponSlot === 5 && equippedTactical === 'yanmo');
         if (chronoWeaponGroup) chronoWeaponGroup.visible = (currentWeaponSlot === 5 && equippedTactical === 'chronoterminus');
+        if (equippedTactical === 'nullsingularity' && currentWeaponSlot === 5) createNullSingularityModel();
+        if (nsWeaponGroup) nsWeaponGroup.visible = (currentWeaponSlot === 5 && equippedTactical === 'nullsingularity');
         // 显示拳头（当当前槽位为空时）
         showFistMode(currentWeaponSlot === 0 || (currentWeaponSlot === 1 && equippedPrimary === 'none') || (currentWeaponSlot === 2 && equippedSecondary === 'none') || (currentWeaponSlot === 3 && equippedMelee === 'none') || (currentWeaponSlot === 4 && equippedGrenadeType === 'none') || (currentWeaponSlot === 5 && equippedTactical === 'none'));
     }
@@ -37283,6 +37619,9 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
                 detail:'冷却'+JUEXIAN_FORM_CD+'秒 | 持续'+JUEXIAN_FORM_DURATION+'秒 | 移速+50% | 免疫眩晕/冰冻/禁锢/减速 | 受到伤害-60% | 自动追踪弦矢 | 灵韵增幅(最高+75%)+乐感', cdRef:()=>juexianFormCooldown, activeRef:()=>juexianFormActive, durRef:()=>juexianFormTimer, maxDur:JUEXIAN_FORM_DURATION, maxCd:JUEXIAN_FORM_CD });
             skills.push({ id:'wsk_p_juexian', key:'被动', name:'弦韵共鸣', type:'passive', icon:'🎶', theme:'wsk-theme-cyan',
                 detail:'伤害增幅 起始+15% | 每秒+2%(HP<50%×2/HP<25%×3) | 最高+180%' });
+        } else if (slot === 5 && equippedTactical === 'nullsingularity') {
+            createNullSingularityModel();
+            if (nsWeaponGroup) nsWeaponGroup.visible = true;
         } else if (slot === 5 && equippedTactical === 'chronoterminus') {
             skills.push({ id:'wsk_e_chronoterminus', key:WSK_TRIGGER, name:'时停领域', type:'active', icon:'⏳', theme:'wsk-theme-cyan',
                 detail:'冷却'+CHRONO_FORM_CD+'秒 | 持续'+CHRONO_FORM_DURATION+'秒 | 移速+70% | 免疫眩晕/冰冻/禁锢/减速 | 受到伤害-55% | 自动发射穿透时序飞刃 | 命中减速50%', cdRef:()=>chronoFormCooldown, activeRef:()=>chronoFormActive, durRef:()=>chronoFormTimer, maxDur:CHRONO_FORM_DURATION, maxCd:CHRONO_FORM_CD });
@@ -37512,7 +37851,7 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
         if (weaponSlot5) {
             weaponSlot5.classList.toggle('active', currentWeaponSlot === 5);
             if ((equippedTactical === 'datacube' && ownedWeapons['datacube']) || (equippedTactical === 'starcore' && ownedWeapons['starcore']) || (equippedTactical === 'yanmo' && ownedWeapons['yanmo'])) {
-                weaponSlot5.querySelector('.weapon-icon').textContent = (equippedTactical === 'starcore' ? '🌟' : (equippedTactical === 'yanmo' ? '🔥' : (equippedTactical === 'chronoterminus' ? '⏳' : '🧊')));
+                weaponSlot5.querySelector('.weapon-icon').textContent = (equippedTactical === 'starcore' ? '🌟' : (equippedTactical === 'yanmo' ? '🔥' : (equippedTactical === 'chronoterminus' ? '⏳' : (equippedTactical === 'nullsingularity' ? '🕳' : '🧊'))));
                 weaponSlot5.querySelector('.weapon-ammo').textContent = '战术';
             } else {
                 weaponSlot5.querySelector('.weapon-icon').textContent = '—';
@@ -37612,6 +37951,7 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
                             currentWeaponSlot === 0;
         if (isSlotEmpty) return; // 空手无副攻击
         if (currentWeaponSlot === 5) {
+            if (equippedTactical === 'nullsingularity') { try { nsDash(); } catch (e) { console.warn('nsDash:', e && e.message); } return; }
             // Tactical weapon - no secondary fire
             return;
         }
@@ -45695,6 +46035,7 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
             if (chronoFormActive) updateChronoForm(delta);
             if (chronoBlades.length > 0) updateChronoBlades(delta);
             if (equippedTactical === 'chronoterminus') updateChronoAmplify(delta);
+            if (equippedTactical === 'nullsingularity') { try { updateNullSingularity(delta); } catch (e) { if (!window._nsErr) { window._nsErr = e; console.error('updateNullSingularity:', e && e.message); } } }
             if (secondaryFanBurstTimer > 0) { secondaryFanBurstTimer -= delta; if (secondaryFanBurstTimer <= 0) { secondaryFanHammer = false; secondaryFanBurstCount = 0; } }
             if (grenadeCooldown > 0) grenadeCooldown -= delta;
             // 投掷动画更新
