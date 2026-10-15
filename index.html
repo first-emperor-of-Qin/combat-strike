@@ -42088,7 +42088,7 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
         '2s': 'secondary', '2m': 'secondary', '2w': 'secondary', '2b': 'secondary', '2c': 'secondary', '2ed': 'secondary', '2dm': 'secondary',
         '3t': 'melee', '3h': 'melee', '3u': 'melee', '3r': 'melee', '3s': 'melee', '3g': 'melee',
         '4n': 'grenade', '4d': 'grenade', '4f': 'grenade', '4tl': 'grenade', '4cl': 'grenade', '4lw': 'grenade', '4ft': 'grenade',
-        '5d': 'tactical', '5e': 'tactical', '5j': 'tactical', '5y': 'tactical', '5ct': 'tactical'
+        '5d': 'tactical', '5e': 'tactical', '5j': 'tactical', '5y': 'tactical', '5ct': 'tactical', '5ns': 'tactical'
     };
     function buildWeaponGrid() {
         if (!weaponGridEl) { console.error('buildWeaponGrid: weaponGridEl is null'); return; }
@@ -43023,6 +43023,15 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
             updateWeaponUI();
             updateAmmoUI();
             playWeaponSwitchSound();
+        } else if (slot === '5ns') {
+            if (!ownedWeapons['nullsingularity']) return;
+            equippedTactical = 'nullsingularity';
+            currentWeaponSlot = 5;
+            if (!nsWeaponGroup) createNullSingularityModel();
+            showCurrentWeapon();
+            updateWeaponUI();
+            updateAmmoUI();
+            playWeaponSwitchSound();
         } else {
             const slotNum = parseInt(slot);
             if (slotNum >= 1 && slotNum <= 3) {
@@ -43296,6 +43305,12 @@ else if(currentWeaponSlot===5 && equippedTactical==='chronoterminus'){activateCh
             // 卸下终焉时序 → 战术武器空
             equippedTactical = 'none';
             resetChronoAmplify();
+            if (currentWeaponSlot === 5) { currentWeaponSlot = 0; hideAllWeapons(); }
+        } else if (slot === '5ns') {
+            // 卸下虚数奇点 → 战术武器空（补齐分支）
+            equippedTactical = 'none';
+            try { nsReset(); } catch (e) {}
+            if (nsWeaponGroup) nsWeaponGroup.visible = false;
             if (currentWeaponSlot === 5) { currentWeaponSlot = 0; hideAllWeapons(); }
         } else if (slot === '3s') {
             // 卸下血鲨神锯 → 近战空（补齐历史遗漏分支）
