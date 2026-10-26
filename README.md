@@ -1,53 +1,104 @@
+<div align="center">
+
 # 枪战突击 · COMBAT STRIKE
 
-**单文件 Three.js 第一人称射击游戏** — `index.html` 即完整项目，浏览器直接打开即可运行（无需构建、无需服务器）。
+**商业级 Web FPS 射击游戏 · Three.js + Node.js 全栈**
 
-[![Weapons](https://img.shields.io/badge/weapons-43-orange)]()
-[![Modes](https://img.shields.io/badge/modes-4-purple)]()
-[![File](https://img.shields.io/badge/single--file-3.1MB-blue)]()
-[![Pages](https://img.shields.io/badge/deploy-github%20pages-success)]()](https://first-emperor-of-qin.github.io/combat-strike/)
+`工程化架构` · `9 章战役` · `18 款分级武器` · `账号系统 / 商城 / 军械库` · `服务端权威数值`
+
+</div>
 
 ---
 
 ## 快速开始
 
 ```bash
-# 本地运行：直接用浏览器打开
-open index.html
+# 安装依赖（npm workspaces：shared / server / client）
+npm install
 
-# 或起个静态服务
-python3 -m http.server 8000    # → http://localhost:8000
+# 开发模式（服务端 :8899 + 客户端 Vite :5173 热更新）
+npm run dev
+
+# 生产构建 + 启动（单端口 8899，服务端托管客户端构建产物）
+npm run build
+npm start
+# → 游戏入口 http://localhost:8899
 ```
 
-## 游戏模式
+打开 **http://localhost:8899**，注册账号即可开始游戏。
+服务端未启动时客户端自动进入「离线试玩模式」，进度保存在本机。
 
-| 模式 | 说明 |
+## 项目结构
+
+```
+combat-strike/
+├── shared/               # 前后端共享数据层（数值单一数据源）
+│   └── src/
+│       ├── types.ts      #   武器/敌人/章节/档案类型定义
+│       ├── weapons.ts    #   18 款武器目录（9 品级，含完整射击参数）
+│       ├── balance.ts    #   平衡公式：DPS 曲线、经济、成长、波次构成
+│       └── index.ts
+├── server/               # Node.js 服务端（Hono + 内置 SQLite + JWT）
+│   └── src/
+│       ├── index.ts      #   入口：API 挂载 + 静态托管 client/dist
+│       ├── db.ts         #   SQLite 初始化与迁移
+│       ├── auth.ts       #   scrypt 密码哈希 + JWT 签发/校验
+│       └── routes.ts     #   认证 / 商城 / 配装 / 战局结算（服务端权威）
+└── client/               # Web 客户端（Vite + TypeScript + Three.js）
+    └── src/
+        ├── main.ts       #   应用流程：登录 → 主菜单 → 对局 → 结算
+        ├── api.ts        #   API 客户端（含离线降级）
+        ├── ui/           #   登录 / 主菜单(战役·军械库·商城·设置) / 结算
+        ├── styles/       #   战术暗色主题
+        └── game/
+            ├── core/     #   渲染引擎(ACES+Bloom) / 输入 / 程序化音频
+            ├── world/    #   程序化地图 / AABB 物理 / 特效池
+            ├── player/   #   第一人称控制器（冲刺/蹲伏/后坐/呼吸）
+            ├── weapons/  #   武器系统 / 程序化武器模型与换弹动画
+            ├── enemies/  #   敌兵 AI / BOSS 阶段 / 弹幕
+            ├── hud/      #   战斗 HUD（小地图/伤害数字/击杀播报）
+            └── gameloop.ts
+```
+
+## 游戏内容
+
+| 系统 | 说明 |
 |---|---|
-| **关卡战役** | 4 大章节 · 50 关 · 10 档难度，敌人数与血量逐关翻倍 |
-| **虚空竞技场** | 无尽生存 · 每 5 波 BOSS · 三选一增益构筑 · 记录最高波次 |
-| **BOSS 副本** | 多形态 BOSS 挑战 · 限时增益 · 高难度专属武器 |
-| **最后的庇护所**（塔防） | 守安全屋 + 保护 NPC · 20 波僵尸 · 每 5 波递增 BOSS · 5 次复活 |
+| **战役** | 9 大章节（废弃军械库 → 奇点要塞），3-5 波/章，顺序解锁 |
+| **BOSS** | 第 3/6/9 章 BOSS 战（寒霜巨兽 / 熔岩魔像 / 虚数主宰），多阶段攻击模式 |
+| **武器** | 18 款 · 9 品级（普通→奇点），9 个枪械类别，商店金币购买 |
+| **敌人** | 8 类：突击兵/疾冲者/电浆射手/重装卫兵/自爆蜂群/猎杀浮雷/精英近卫/BOSS |
+| **成长** | 账号等级（LV.60 上限）· 金币经济 · 首通/每日首通/重复通关奖励 |
+| **手感** | 散布-后坐模型、ADS 开镜、程序化换弹动画、命中反馈（爆头标记/伤害数字） |
 
-## 技术栈
+## 数值设计（详见 `shared/src/balance.ts`）
 
-- **Three.js**（CDN，`r150+`）+ 原生 JS（无框架、无打包器）
-- 7 个内联 `<script>` 块 + 5 个 `<style>` 块，全部内联在 `index.html`
-- 存档：`localStorage`（`cs_save_v2`）
+- 品级 DPS 曲线：`110 × 1.55^(T-1)`，C 章对应 T 级武器，同级杂兵 TTK ≈ 1 秒
+- 敌人生命：`55 × 1.8^(C-1)`；敌人伤害：`基准 × 1.32^(C-1)`
+- 经济：首通 `1200 × 2.2^(C-1)` 金币，重复通关 35%，每日首通 +50%
+- 结算奖励由**服务端按公式计算**（客户端虚报击杀数会被截断），反作弊冗余系数 1.6
 
-## 文档
+## 工程规范
 
-| 文档 | 内容 |
+- **TypeScript 全栈 strict 模式**，共享类型从 `@combat-strike/shared` 单一导入
+- **测试**：`npm test` — 28 项（数值平衡不变式 14 项 + 服务端 API/反作弊 14 项）
+- **代码质量**：`npm run typecheck` — 三个 workspace 全量类型检查
+- **零运行时原生依赖**：服务端使用 Node 内置 `node:sqlite`，密码哈希用 `node:crypto`
+- **性能**：合并静态几何、对象池（拖尾/爆炸/投射物/伤害数字）、固定 60fps rAF + 后台降级调度
+
+## 操作
+
+| 按键 | 功能 |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 代码结构、数据表、坐标系与单位约定、扩展方式 |
-| [docs/PLAYBOOK.md](docs/PLAYBOOK.md) | **更新策略** — 改代码的强制流程、验证方法、部署流程 |
-| [docs/CHANGELOG.md](docs/CHANGELOG.md) | 变更记录 |
-| `.workbuddy/memory/` | 逐日开发日志与长期记忆（架构铁律 / 踩坑记录） |
+| `WASD` / `Shift` / `Ctrl` / `空格` | 移动 / 冲刺 / 蹲伏 / 跳跃 |
+| 鼠标左键 / 右键 | 射击 / 开镜 |
+| `R` / `1` `2` `Q` / 滚轮 | 换弹 / 切枪 |
+| `ESC` | 战术暂停 |
 
-## 贡献与部署
+## 部署
 
-- `main` = 稳定版（生产环境由此分支自动部署）
-- 特性开发走独立分支 → PR 合并
-- 推送到 `main` 且 `index.html` 变更时，GitHub Actions 自动部署到 GitHub Pages
+- `npm run build && npm start` — 单端口生产模式（API + 静态资源）
+- 推送到 `main` 时 GitHub Actions 自动构建客户端并部署 GitHub Pages 静态预览（离线试玩模式）
 
 ## 许可
 

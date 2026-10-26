@@ -1,11 +1,28 @@
-# WorkBuddy 本地数据与备份（不进仓库）
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# runtime data
+server/data/*.db
+server/data/*.db-journal
+server/data/*.db-wal
+server/data/*.db-shm
+
+# env & secrets
+.env
+.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# session/tool artifacts
+.zcode/
 .workbuddy/backups/
 .workbuddy/*.local
-node_modules/
-.DS_Store
 
-# 会话/工具内部产物
-.zcode/
-
-# 本地交付文档（不入库）
-docs/UI-UX-PROMPTS.md
+# JWT 密钥
+server/data/jwt.key
