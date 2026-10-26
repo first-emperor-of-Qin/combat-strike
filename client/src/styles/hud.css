@@ -1,0 +1,184 @@
+/* ============ 战斗 HUD ============ */
+.hud-root {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  display: none;
+  font-family: var(--font-num);
+}
+
+.hud-top-left {
+  position: absolute; top: 22px; left: 26px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.wave-title { font-size: 22px; font-weight: 700; letter-spacing: 3px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+.wave-sub { font-size: 13px; color: var(--text-1); letter-spacing: 1px; }
+.wave-bar-wrap { width: 240px; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+.wave-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.2s; }
+
+.hud-top-right {
+  position: absolute; top: 22px; right: 26px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+}
+.gold-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(10, 14, 20, 0.72);
+  border: 1px solid rgba(255, 215, 92, 0.35);
+  padding: 4px 12px; border-radius: 3px;
+  font-size: 16px; font-weight: 700; color: var(--gold);
+}
+.gold-icon { font-size: 11px; }
+#hud-minimap {
+  border: 1px solid rgba(122, 168, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(8, 12, 18, 0.66);
+}
+.killfeed { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-height: 20px; }
+.feed-item {
+  background: rgba(10, 14, 20, 0.78);
+  border-right: 2px solid var(--accent);
+  padding: 3px 10px; font-size: 12.5px; color: var(--text-0);
+  animation: slideInRight 0.18s ease;
+}
+.fps { font-size: 11px; color: var(--text-2); }
+
+.hud-boss {
+  position: absolute; top: 26px; left: 50%; transform: translateX(-50%);
+  width: 520px; text-align: center;
+}
+.boss-name {
+  font-size: 19px; font-weight: 700; letter-spacing: 6px; color: #ffd7de;
+  text-shadow: 0 0 18px rgba(255, 56, 96, 0.8), 0 2px 6px rgba(0,0,0,0.8);
+  margin-bottom: 5px;
+}
+.boss-bar-wrap { height: 10px; background: rgba(20,8,14,0.8); border: 1px solid rgba(255,56,96,0.5); border-radius: 2px; overflow: hidden; }
+.boss-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #ff3860, #ff6a9a); transition: width 0.15s; }
+
+.hud-announce {
+  position: absolute; top: 24%; left: 50%; transform: translateX(-50%);
+  text-align: center; opacity: 0; pointer-events: none;
+}
+.hud-announce.show { animation: announceAnim 2.4s ease forwards; }
+@keyframes announceAnim {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+  12% { opacity: 1; transform: translateX(-50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+}
+.announce-title { font-size: 40px; font-weight: 800; letter-spacing: 10px; text-shadow: 0 4px 30px rgba(0,0,0,0.9), 0 0 24px rgba(255,106,0,0.4); }
+.announce-sub { font-size: 15px; color: var(--text-1); letter-spacing: 4px; margin-top: 4px; }
+
+.hud-bottom-left {
+  position: absolute; bottom: 26px; left: 30px;
+}
+.hp-row { display: flex; align-items: center; gap: 10px; }
+.hp-label { font-size: 12px; color: var(--text-1); letter-spacing: 3px; }
+.hp-bar-wrap {
+  position: relative; width: 300px; height: 16px;
+  background: rgba(10, 14, 20, 0.75);
+  border: 1px solid rgba(255,255,255,0.18);
+  overflow: hidden;
+  transform: skewX(-12deg);
+}
+.hp-ghost { position: absolute; inset: 0; width: 100%; background: rgba(255,255,255,0.14); transition: width 0.5s ease 0.2s; }
+.hp-bar { position: absolute; inset: 0; width: 100%; background: linear-gradient(90deg,#4caf50,#8fe06a); transition: width 0.12s; }
+.hp-text { font-size: 26px; font-weight: 800; min-width: 56px; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+
+.hud-bottom-right {
+  position: absolute; bottom: 22px; right: 34px;
+  text-align: right;
+}
+.reload-hint {
+  display: none;
+  font-size: 14px; color: var(--accent-2); letter-spacing: 3px;
+  animation: pulse 0.8s infinite;
+  margin-bottom: 2px;
+}
+.ammo-row { display: flex; align-items: baseline; justify-content: flex-end; gap: 6px; }
+.ammo-mag { font-size: 44px; font-weight: 800; line-height: 1; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+.ammo-sep { font-size: 22px; color: var(--text-2); }
+.ammo-reserve { font-size: 20px; color: var(--text-1); }
+.weapon-name { font-size: 13px; color: var(--text-1); letter-spacing: 2px; margin-top: 3px; }
+
+/* 准星 */
+.hud-crosshair {
+  position: absolute; top: 50%; left: 50%;
+  width: 0; height: 0;
+  --gap: 10px;
+}
+.ch { position: absolute; background: rgba(240, 245, 250, 0.92); box-shadow: 0 0 3px rgba(0,0,0,0.8); }
+.ch-t { width: 2px; height: 8px; left: -1px; top: calc(-1 * var(--gap) - 8px); }
+.ch-b { width: 2px; height: 8px; left: -1px; top: var(--gap); }
+.ch-l { width: 8px; height: 2px; top: -1px; left: calc(-1 * var(--gap) - 8px); }
+.ch-r { width: 8px; height: 2px; top: -1px; left: var(--gap); }
+.ch-dot { position: absolute; width: 2px; height: 2px; left: -1px; top: -1px; background: rgba(240,245,250,0.9); }
+.hud-crosshair .ch { transition: all 0.08s; }
+
+/* 命中标记 */
+.hitmarker {
+  position: absolute; top: 50%; left: 50%;
+  opacity: 0;
+}
+.hitmarker span {
+  position: absolute; width: 2.5px; height: 9px;
+  background: #fff;
+}
+.hitmarker span:nth-child(1) { transform: translate(-8px, -14px) rotate(-45deg); }
+.hitmarker span:nth-child(2) { transform: translate(6px, -14px) rotate(45deg); }
+.hitmarker span:nth-child(3) { transform: translate(-8px, 4px) rotate(45deg); }
+.hitmarker span:nth-child(4) { transform: translate(6px, 4px) rotate(-45deg); }
+.hitmarker.head span { background: #ffd75c; box-shadow: 0 0 6px #ffd75c; }
+.hitmarker.show { animation: hmAnim 0.18s ease; }
+@keyframes hmAnim {
+  0% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+/* 受击红晕 */
+.dmg-vignette {
+  position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(255, 24, 60, 0.5) 100%);
+  transition: opacity 0.2s;
+}
+
+/* 受击方向指示 */
+.dmg-dir-wrap {
+  position: absolute; top: 50%; left: 50%;
+  width: 0; height: 0;
+}
+.dmg-dir {
+  position: absolute;
+  width: 4px; height: 34px;
+  left: -2px; top: -110px;
+  background: linear-gradient(to top, transparent, rgba(255, 56, 96, 0.9));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 110px;
+}
+
+/* 伤害数字 */
+.dmg-numbers { position: absolute; inset: 0; overflow: hidden; }
+.dmg-number {
+  position: absolute; top: 0; left: 0;
+  font-size: 17px; font-weight: 700; color: #ffe9c9;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  will-change: transform, opacity;
+}
+.dmg-number.head {
+  color: #ffd75c;
+  font-size: 21px;
+  text-shadow: 0 0 10px rgba(255, 215, 92, 0.7), 0 2px 6px rgba(0,0,0,0.9);
+}
+
+/* ============ 暂停菜单 ============ */
+.pause-overlay {
+  position: absolute; inset: 0;
+  background: rgba(5, 7, 11, 0.82);
+  backdrop-filter: blur(6px);
+  z-index: 8;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 26px;
+}
+.pause-title { font-size: 34px; letter-spacing: 12px; font-weight: 800; }
+.pause-menu { display: flex; flex-direction: column; gap: 12px; width: 260px; }
+.pause-menu .btn { width: 100%; text-align: center; }

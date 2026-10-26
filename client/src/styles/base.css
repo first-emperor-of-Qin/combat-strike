@@ -1,0 +1,134 @@
+:root {
+  --bg-0: #07090d;
+  --bg-1: #0b0e14;
+  --bg-2: #11161f;
+  --bg-3: #171e2a;
+  --line: #232c3b;
+  --text-0: #eef2f7;
+  --text-1: #9aa6b8;
+  --text-2: #5d6a7d;
+  --accent: #ff6a00;
+  --accent-2: #ffb020;
+  --danger: #ff3860;
+  --ok: #4caf50;
+  --gold: #ffd75c;
+  --font-num: 'Rajdhani', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-num);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#app { width: 100%; height: 100%; position: relative; }
+
+canvas.game-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+}
+
+button { font-family: inherit; cursor: pointer; }
+input { font-family: inherit; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #2a3446; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ============ 全屏界面通用 ============ */
+.screen {
+  position: absolute; inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.screen-bg {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1200px 700px at 70% 20%, rgba(255, 106, 0, 0.08), transparent 60%),
+    radial-gradient(900px 600px at 20% 80%, rgba(34, 224, 255, 0.06), transparent 60%),
+    linear-gradient(160deg, #0a0d13 0%, #07090d 60%, #0a0c12 100%);
+}
+
+.screen-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--bg-3);
+  color: var(--text-0);
+  padding: 10px 22px;
+  font-size: 15px;
+  letter-spacing: 2px;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.btn:hover { border-color: var(--accent); color: var(--accent-2); background: #1c2331; }
+.btn:active { transform: translateY(1px); }
+.btn.primary {
+  background: linear-gradient(135deg, #ff6a00, #ff8f3c);
+  border: none; color: #14100a; font-weight: 700;
+  box-shadow: 0 4px 24px rgba(255, 106, 0, 0.35);
+}
+.btn.primary:hover { filter: brightness(1.1); color: #14100a; }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.text-input {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text-0);
+  padding: 12px 14px;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.text-input:focus { border-color: var(--accent); }
+
+/* 品级颜色 */
+.tier-1 { --tier: #9aa3ad; } .tier-2 { --tier: #4caf50; } .tier-3 { --tier: #2f81f7; }
+.tier-4 { --tier: #9b59f6; } .tier-5 { --tier: #ffb020; } .tier-6 { --tier: #ff6a00; }
+.tier-7 { --tier: #ff3860; } .tier-8 { --tier: #ff4fd8; } .tier-9 { --tier: #7df9ff; }
+
+/* 淡入动画 */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(0.92); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes glowPulse { 0%,100% { box-shadow: 0 0 12px rgba(255,106,0,0.3);} 50% { box-shadow: 0 0 28px rgba(255,106,0,0.6);} }
+
+/* 错误浮层 */
+#err-overlay {
+  position: fixed; inset: auto 12px 12px 12px;
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none;
+}
+.err-chip {
+  background: rgba(40, 8, 16, 0.92);
+  border: 1px solid var(--danger);
+  color: #ffd7de;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  max-height: 120px; overflow: hidden;
+  border-radius: 4px;
+}

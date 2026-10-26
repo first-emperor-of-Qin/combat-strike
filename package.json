@@ -1,0 +1,25 @@
+{
+  "name": "combat-strike",
+  "version": "2.0.0",
+  "private": true,
+  "description": "枪战突击 COMBAT STRIKE — 商业级 Web FPS（Three.js + Node.js 全栈）",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm:dev -w server\" \"npm:dev -w client\"",
+    "build": "npm run build -w shared && npm run build -w client",
+    "start": "npm run start -w server",
+    "test": "npm run test -w server && npm run test -w shared",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
