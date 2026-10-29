@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { waveComposition, BOSS_CHAPTERS, enemyHpMult } from '@combat-strike/shared';
+import { waveComposition, BOSS_NAMES, enemyHpMult } from '@combat-strike/shared';
+import { BOSS_ELEMENT_COLORS } from './world/bossColors.js';
 import type { ChapterDef, EnemyKind, WeaponDef } from '@combat-strike/shared';
 import type { EnemyManager } from './enemies/enemies.js';
 import type { Player } from './player/controller.js';
@@ -28,6 +29,8 @@ export class Campaign {
   private maxAlive = 14;
 
   private onEnd?: (victory: boolean) => void;
+  private primaryId = '';
+  private secondaryId = '';
 
   constructor(
     private enemies: EnemyManager,
@@ -37,9 +40,11 @@ export class Campaign {
     private hud: HudHooks,
   ) {}
 
-  begin(chapter: ChapterDef, mapData: MapData, primary: WeaponDef, secondary: WeaponDef, onEnd: (victory: boolean) => void): void {
+  begin(chapter: ChapterDef, mapData: MapData, primary: WeaponDef, secondary: WeaponDef, onEnd: (victory: boolean) => void, upgrades: Record<string, number> = {}): void {
     this.chapter = chapter;
     this.mapData = mapData;
+    this.primaryId = primary.id;
+    this.secondaryId = secondary.id;
     this.wave = 0;
     this.kills = 0;
     this.waveKills = 0;
@@ -52,7 +57,7 @@ export class Campaign {
     this.onEnd = onEnd;
 
     this.player.spawn(mapData.playerStart.clone(), this.player.maxHp);
-    this.weapons.equip(primary, secondary);
+    this.weapons.equip(primary, secondary, upgrades);
     this.hud.announce(chapter.name, chapter.subtitle);
     this.hud.setWaveInfo('准备', '敌人正在集结…', 0);
   }
@@ -111,6 +116,10 @@ export class Campaign {
         this.state = 'intermission';
         this.intermissionT = 6;
         this.player.heal(Math.round(this.player.maxHp * 0.22));
+        // 黎明之光被动：圣光灌注（波次休整额外 +20%）
+        if (this.primaryId === 'dawn-light' || this.secondaryId === 'dawn-light') {
+          this.player.heal(Math.round(this.player.maxHp * 0.2));
+        }
         this.hud.announce(`第 ${this.wave} 波 清除`, '生命回复 · 准备迎接下一波');
         // 补给：备弹恢复一部分
         this.resupply();
@@ -127,8 +136,8 @@ export class Campaign {
     for (const [kind, n] of Object.entries(comp)) {
       for (let i = 0; i < (n ?? 0); i++) queue.push(kind as EnemyKind);
     }
-    // BOSS 章 → 最终波加入 BOSS
-    if (BOSS_CHAPTERS[ch.id] && this.wave === ch.waves) queue.push('boss');
+    // 每章终波 → 专属 BOSS
+    if (BOSS_NAMES[ch.id] && this.wave === ch.waves) queue.push('boss');
     // 打乱
     for (let i = queue.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -139,8 +148,8 @@ export class Campaign {
     this.state = 'combat';
     this.spawnTimer = 0.5;
     this.audio.waveStart();
-    const isBossWave = this.wave === ch.waves && !!BOSS_CHAPTERS[ch.id];
-    this.hud.announce(isBossWave ? `BOSS · ${BOSS_CHAPTERS[ch.id]}` : `第 ${this.wave} 波`, isBossWave ? '击杀 BOSS' : '消灭所有敌人');
+    const boss = this.wave === ch.waves ? BOSS_NAMES[ch.id] : undefined;
+    this.hud.announce(boss ? `BOSS · ${boss.name}` : `第 ${this.wave} 波`, boss ? '击杀 BOSS' : '消灭所有敌人');
   }
 
   private spawnEnemy(kind: EnemyKind): void {
@@ -155,8 +164,14 @@ export class Campaign {
       if (d > bestD) { bestD = d; best = cand; }
     }
     const at = best.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, 0, (Math.random() - 0.5) * 3));
-    const accent = kind === 'elite' || kind === 'boss' ? this.chapter!.accentColor : undefined;
-    this.enemies.spawn(kind, this.chapter!.id, at, accent);
+    const accent = kind === 'boss'
+      ? BOSS_ELEMENT_COLORS[BOSS_NAMES[this.chapter!.id]?.element ?? 'none']
+      : kind === 'elite' ? this.chapter!.accentColor : undefined;
+    const e = this.enemies.spawn(kind, this.chapter!.id, at, accent);
+    if (kind === 'boss') {
+      const info = BOSS_NAMES[this.chapter!.id];
+      if (info) e.name = info.name;
+    }
   }
 
   private resupply(): void {

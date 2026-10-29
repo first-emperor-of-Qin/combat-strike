@@ -182,3 +182,48 @@
 .pause-title { font-size: 34px; letter-spacing: 12px; font-weight: 800; }
 .pause-menu { display: flex; flex-direction: column; gap: 12px; width: 260px; }
 .pause-menu .btn { width: 100%; text-align: center; }
+
+/* ============ 武器技能 HUD ============ */
+.skill-hud {
+  position: absolute;
+  right: 34px; bottom: 118px;
+  display: flex; align-items: center; gap: 12px;
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+.skill-hud.ready { opacity: 1; }
+.skill-hud.ready .skill-ring { filter: drop-shadow(0 0 8px rgba(255,176,32,0.7)); }
+.skill-ring { position: relative; width: 44px; height: 44px; }
+.skill-ring svg { width: 44px; height: 44px; transform: rotate(-90deg); }
+.skill-ring .sr-bg { fill: rgba(10,14,20,0.75); stroke: rgba(255,255,255,0.16); stroke-width: 3; }
+.skill-ring .sr-fg {
+  fill: none; stroke: var(--accent-2); stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 119.4; stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.1s linear;
+}
+.skill-key {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 15px; font-weight: 800; color: var(--text-0);
+}
+.skill-hud:not(.ready) .skill-key { color: var(--text-2); }
+.skill-info .skill-name { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--text-1); }
+.skill-hud.ready .skill-info .skill-name { color: var(--accent-2); }
+
+/* ============ 连击显示 ============ */
+.combo-wrap {
+  position: absolute;
+  right: 48px; top: 38%;
+  text-align: right;
+  animation: popIn 0.18s ease;
+}
+.combo-text {
+  font-size: 46px; font-weight: 800; line-height: 1;
+  color: var(--accent-2);
+  text-shadow: 0 0 18px rgba(255,176,32,0.55), 0 2px 8px rgba(0,0,0,0.8);
+}
+.combo-wrap.hot .combo-text {
+  color: #ff6a3c;
+  text-shadow: 0 0 26px rgba(255,106,0,0.8), 0 2px 8px rgba(0,0,0,0.8);
+}
+.combo-bar-wrap { width: 90px; height: 3px; background: rgba(255,255,255,0.14); margin: 6px 0 0 auto; }
+.combo-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }

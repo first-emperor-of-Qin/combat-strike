@@ -43,6 +43,13 @@ export class Hud implements HudHooks {
   private dmgDirWrap!: HTMLDivElement;
   private fpsText!: HTMLDivElement;
 
+  private skillWrap!: HTMLDivElement;
+  private skillName!: HTMLDivElement;
+  private skillRing!: HTMLElement;
+  private comboWrap!: HTMLDivElement;
+  private comboText!: HTMLDivElement;
+  private comboBar!: HTMLDivElement;
+
   private dmgNumbers: FloatNumber[] = [];
   private numberPool: HTMLDivElement[] = [];
   private feeds: FeedItem[] = [];
@@ -114,6 +121,22 @@ export class Hud implements HudHooks {
       <div class="dmg-vignette" id="hud-vignette"></div>
       <div class="dmg-dir-wrap" id="hud-dmg-dir"></div>
       <div class="dmg-numbers" id="hud-dmg-numbers"></div>
+      <div class="skill-hud" id="hud-skill">
+        <div class="skill-ring">
+          <svg viewBox="0 0 44 44">
+            <circle class="sr-bg" cx="22" cy="22" r="19"></circle>
+            <circle class="sr-fg" id="hud-skill-ring" cx="22" cy="22" r="19"></circle>
+          </svg>
+          <span class="skill-key">F</span>
+        </div>
+        <div class="skill-info">
+          <div class="skill-name" id="hud-skill-name">技能</div>
+        </div>
+      </div>
+      <div class="combo-wrap" id="hud-combo" style="display:none">
+        <div class="combo-text" id="hud-combo-text">×5</div>
+        <div class="combo-bar-wrap"><div class="combo-bar" id="hud-combo-bar"></div></div>
+      </div>
     `;
   }
 
@@ -133,6 +156,32 @@ export class Hud implements HudHooks {
     this.minimap = this.root.querySelector('#hud-minimap') as HTMLCanvasElement;
     this.dmgDirWrap = q('hud-dmg-dir');
     this.fpsText = q('hud-fps');
+    this.skillWrap = q('hud-skill');
+    this.skillName = q('hud-skill-name');
+    this.skillRing = this.root.querySelector('#hud-skill-ring') as unknown as HTMLElement;
+    this.comboWrap = q('hud-combo');
+    this.comboText = q('hud-combo-text');
+    this.comboBar = q('hud-combo-bar');
+  }
+
+  /** 技能 HUD（名称 + 冷却环） */
+  setSkill(name: string, cdFrac: number, ready: boolean): void {
+    this.skillName.textContent = name;
+    const C = 2 * Math.PI * 19;
+    this.skillRing.style.strokeDashoffset = String(C * (1 - cdFrac));
+    this.skillWrap.classList.toggle('ready', ready);
+  }
+
+  /** 连击显示 */
+  combo(count: number, lifeK: number): void {
+    if (count >= 2) {
+      this.comboWrap.style.display = 'block';
+      this.comboText.textContent = `×${count}`;
+      this.comboBar.style.width = `${Math.max(0, Math.min(1, lifeK)) * 100}%`;
+      this.comboWrap.classList.toggle('hot', count >= 10);
+    } else {
+      this.comboWrap.style.display = 'none';
+    }
   }
 
   bindCamera(camera: THREE.PerspectiveCamera): void { this.camera = camera; }

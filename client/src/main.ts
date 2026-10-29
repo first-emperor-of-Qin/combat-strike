@@ -5,7 +5,7 @@ import './styles/menu.css';
 import * as THREE from 'three';
 import type { Profile, ChapterDef, WeaponDef } from '@combat-strike/shared';
 import { WEAPON_MAP, playerMaxHp, xpForLevel } from '@combat-strike/shared';
-import { api, setToken, isOffline } from './api.js';
+import { api, setToken, isOffline, type Catalog } from './api.js';
 import { loadSettings, type Settings } from './config.js';
 import { Game, type RunSummary } from './game/gameloop.js';
 import { showAuthScreen } from './ui/auth.js';
@@ -41,7 +41,7 @@ const settings: Settings = loadSettings();
 let game: Game | null = null;
 let menu: MainMenu | null = null;
 let profile: Profile | null = null;
-let catalog: { weapons: WeaponDef[]; chapters: ChapterDef[]; bosses: Record<string, string> } | null = null;
+let catalog: Catalog | null = null;
 let currentChapter: ChapterDef | null = null;
 let resultsScreen: HTMLElement | null = null;
 
@@ -123,7 +123,7 @@ async function startChapter(chapter: ChapterDef): Promise<void> {
   const secondary = WEAPON_MAP.get(secondaryId) ?? WEAPON_MAP.get('shadow-smg')!;
 
   const maxHp = playerMaxHp(profile.level);
-  g.startChapter(chapter, primary, secondary, maxHp, (summary) => void onRunEnd(summary));
+  g.startChapter(chapter, primary, secondary, maxHp, (summary) => void onRunEnd(summary), profile.upgrades ?? {});
 }
 
 async function onRunEnd(summary: RunSummary): Promise<void> {
@@ -201,7 +201,12 @@ if (new URLSearchParams(location.search).has('debug')) {
       return list.length;
     },
     godMode: () => {
-      if (game) game.player.hp = 99999;
+      // 无敌帧方式（波次治疗钳制不会破坏），同时回满血
+      if (game) {
+        game.player.maxHp = Math.max(game.player.maxHp, 108);
+        game.player.hp = game.player.maxHp;
+        game.player.invulnT = 999999;
+      }
     },
     // 快进：以固定 60fps 步长手动推进 n 帧（后台节流环境下的测试工具）
     // noRender=true 时跳过渲染，专用于逻辑推进

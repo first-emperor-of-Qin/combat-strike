@@ -36,6 +36,12 @@ export class Player {
 
   // 外部注入：武器移动倍率
   moveMult = 1;
+  /** 受伤倍率（龙鳞守护等被动） */
+  damageTakenMult = 1;
+  /** 无敌剩余时间（影遁/闪现） */
+  invulnT = 0;
+  /** 影遁加速倍率 */
+  speedBuffMult = 1;
 
   // 后坐视角偏移（武器系统写入，自动回落）
   recoilPitch = 0;
@@ -98,9 +104,11 @@ export class Player {
     // ---- 冲刺 ----
     this.sprinting = input.down('ShiftLeft') && !this.crouching && this.moveInput(input) !== 0;
 
+    if (this.invulnT > 0) this.invulnT -= dt;
+
     // ---- 移动输入（相机相对） ----
     const wish = this.wishDir(input);
-    const speed = (this.crouching ? CROUCH : this.sprinting ? SPRINT : WALK) * this.moveMult;
+    const speed = (this.crouching ? CROUCH : this.sprinting ? SPRINT : WALK) * this.moveMult * this.speedBuffMult;
     const accel = this.onGround ? ACCEL_GROUND : ACCEL_AIR;
 
     // 水平速度趋近目标
@@ -176,8 +184,8 @@ export class Player {
   }
 
   damage(amount: number): void {
-    if (amount <= 0) return;
-    this.hp = Math.max(0, this.hp - amount);
+    if (amount <= 0 || this.invulnT > 0) return;
+    this.hp = Math.max(0, this.hp - amount * this.damageTakenMult);
     this.camShake = Math.min(0.5, this.camShake + 0.12);
   }
 

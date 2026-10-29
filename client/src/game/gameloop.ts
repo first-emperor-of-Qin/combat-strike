@@ -10,6 +10,8 @@ import { Effects } from './world/effects.js';
 import { Player } from './player/controller.js';
 import { Viewmodel } from './weapons/viewmodel.js';
 import { WeaponSystem } from './weapons/system.js';
+import { SkillSystem } from './weapons/skills.js';
+import { Pickups } from './world/pickups.js';
 import { EnemyManager } from './enemies/enemies.js';
 import { Campaign } from './campaign.js';
 import { Hud } from './hud/hud.js';
@@ -40,6 +42,13 @@ export class Game {
   enemyMgr: EnemyManager;
   campaign: Campaign;
   hud: Hud;
+  skills: SkillSystem;
+  pickups: Pickups;
+
+  // 连击
+  private comboCount = 0;
+  private comboT = 0;
+  private static readonly COMBO_WINDOW = 4;
 
   private scene: THREE.Scene;
   private mapData: MapData | null = null;
@@ -79,18 +88,26 @@ export class Game {
         void amount;
       },
       onEnemyKilled: (kind: EnemyKind, pos: THREE.Vector3, isBoss: boolean) => {
-        // 所有死亡来源（武器/爆炸/自爆）统一在此计入击杀与金币
+        // 所有死亡来源（武器/爆炸/技能）统一在此计入击杀，金币以拾取物掉落
         this.campaign.onEnemyKilled(kind, pos);
         const g = Math.max(1, Math.round(killGold(this.chapter?.id ?? 1) * (isBoss ? 10 : (ENEMIES[kind]?.gold ?? 1))));
-        this.gold += g;
-        this.campaign.notifyGold(this.gold);
+        this.pickups.drop(pos, g, isBoss);
+        // 击杀爆裂 + 连击
+        this.effects.spark(pos.clone().setY(pos.y + 0.8), new THREE.Vector3(0, 1, 0), isBoss ? '#ffd75c' : '#ff8a4f', isBoss ? 36 : 10, isBoss ? 8 : 4);
+        this.comboCount += 1;
+        this.comboT = Game.COMBO_WINDOW;
         if (isBoss) {
           this.effects.explosion(pos.clone().setY(2), 6, '#ffd75c');
           this.audio.victory();
           this.hud.killfeed('BOSS 已被摧毁');
+        } else if (this.comboCount >= 5 && this.comboCount % 5 === 0) {
+          this.hud.killfeed(`${this.comboCount} 连击！`);
         } else {
           this.hud.killfeed(`击杀 ${ENEMIES[kind]?.name ?? '敌人'}`);
         }
+      },
+      onStatusDamage: (pos: THREE.Vector3, amount: number) => {
+        this.hud.damageNumber(pos.clone().setY(pos.y + 1), amount, false);
       },
     };
 
@@ -100,6 +117,19 @@ export class Game {
       this.hud, () => this.enemyMgr.enemies,
     );
     this.weapons.bindCamera(this.engine.camera);
+    this.skills = new SkillSystem(
+      this.scene, this.physics, this.effects, this.audio, this.player, this.weapons,
+      { setSkill: (n, c, r) => this.hud.setSkill(n, c, r), announce: (t, sub) => this.hud.announce(t, sub) },
+      () => this.engine.camera,
+    );
+    this.weapons.skills = this.skills;
+    // 强化弹回调
+    this.skills.onPowerShot = (shots, mult) => { this.weapons.setPowerShots(shots, mult); };
+    this.pickups = new Pickups(this.scene, this.audio);
+    this.pickups.onCollect = (value) => {
+      this.gold += value;
+      this.campaign.notifyGold(this.gold);
+    };
     this.campaign = new Campaign(this.enemyMgr, this.player, this.weapons, this.audio, this.hud);
 
     this.player.onFootstep = () => this.audio.footstep();
@@ -119,10 +149,12 @@ export class Game {
     }
   };
 
-  startChapter(chapter: ChapterDef, primary: WeaponDef, secondary: WeaponDef, maxHp: number, onRunEnd: (summary: RunSummary) => void): void {
+  startChapter(chapter: ChapterDef, primary: WeaponDef, secondary: WeaponDef, maxHp: number, onRunEnd: (summary: RunSummary) => void, upgrades: Record<string, number> = {}): void {
     this.chapter = chapter;
     this.ended = false;
     this.gold = 0;
+    this.comboCount = 0;
+    this.comboT = 0;
     this.onRunEnd = onRunEnd;
 
     // 场景重建
@@ -133,9 +165,13 @@ export class Game {
     this.scene.fog = new THREE.FogExp2(new THREE.Color(chapter.fogColor).getHex(), chapter.fogDensity);
 
     this.player.maxHp = maxHp;
+    this.pickups.clear();
+    this.skills.clearZones();
     this.campaign.begin(chapter, this.mapData, primary, secondary, (victory) => {
       this.ended = true;
       this.input.releaseLock();
+      this.pickups.flushAll(); // 结算自动拾取剩余金币
+      this.hud.combo(0, 0);
       this.onRunEnd?.({
         chapter: chapter.id,
         success: victory,
@@ -184,6 +220,8 @@ export class Game {
       this.mapData = null;
     }
     this.enemyMgr.clear();
+    this.pickups.clear();
+    this.skills.clearZones();
   }
 
   pause(): void {
@@ -213,7 +251,7 @@ export class Game {
         <button class="btn primary" data-act="resume">继续作战</button>
         <button class="btn ghost" data-act="quit">撤出战场（结算失败）</button>
       </div>
-      <div style="color:var(--text-2);font-size:13px;letter-spacing:2px">WASD 移动 · Shift 冲刺 · Ctrl 蹲伏 · R 换弹 · 1/2/Q 切枪 · 右键开镜</div>
+      <div style="color:var(--text-2);font-size:13px;letter-spacing:2px">WASD 移动 · Shift 冲刺 · Ctrl 蹲伏 · R 换弹 · F/中键 技能 · 1/2/Q 切枪 · 右键开镜</div>
     `;
     overlay.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
@@ -275,6 +313,15 @@ export class Game {
       this.campaign.update(dt);
       this.enemyMgr.update(dt, this.time);
       this.weapons.update(dt, this.enemyMgr.enemies);
+      this.skills.update(dt, this.enemyMgr.enemies);
+      this.pickups.update(dt, this.player.pos);
+
+      // 连击窗口
+      if (this.comboT > 0) {
+        this.comboT -= dt;
+        if (this.comboT <= 0) this.comboCount = 0;
+        this.hud.combo(this.comboCount, this.comboT / Game.COMBO_WINDOW);
+      }
       this.viewmodel.update(
         dt, this.player.moveNorm, this.player.onGround,
         this.input.mouseDX, this.input.mouseDY, this.player.sprintK,

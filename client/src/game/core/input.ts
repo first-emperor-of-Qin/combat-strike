@@ -16,6 +16,9 @@ export class Input {
   private sens = 1.0;
   private invertY = false;
 
+  // 本帧按下过的鼠标键（一次性消费）
+  private buttonsPressed = new Set<number>();
+
   private canvas: HTMLCanvasElement;
   private onLockChange?: (locked: boolean) => void;
 
@@ -34,6 +37,7 @@ export class Input {
 
     canvas.addEventListener('mousedown', (e) => {
       this.mouseButtons[e.button] = true;
+      this.buttonsPressed.add(e.button);
     });
     window.addEventListener('mouseup', (e) => { this.mouseButtons[e.button] = false; });
     window.addEventListener('mousemove', (e) => {
@@ -71,8 +75,14 @@ export class Input {
     if (this.pressed.has(code)) { return true; }
     return false;
   }
+  /** 本帧是否按下过某鼠标键 */
+  buttonHit(button: number): boolean {
+    return this.enabled && this.buttonsPressed.has(button);
+  }
+
   endFrame(): void {
     this.pressed.clear();
+    this.buttonsPressed.clear();
     this.mouseDX = 0;
     this.mouseDY = 0;
     this.wheel = 0;

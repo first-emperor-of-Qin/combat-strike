@@ -40,6 +40,8 @@ function part(w: number, h: number, d: number, mat: THREE.Material, x = 0, y = 0
 export interface EnemyHooks {
   onPlayerDamaged(amount: number, fromPos: THREE.Vector3): void;
   onEnemyKilled(kind: EnemyKind, pos: THREE.Vector3, isBoss: boolean): void;
+  /** 状态伤害（灼烧等）的飘字 */
+  onStatusDamage(pos: THREE.Vector3, amount: number): void;
 }
 
 interface EnemyBolt {
@@ -81,9 +83,18 @@ export class Enemy implements EnemyLike {
   private strafeT = 0;
   private lastBoltT = 0;
 
+  // 元素状态效果
+  private burnT = 0; private burnDps = 0; private burnTick = 0;
+  private slowT = 0; private slowFactor = 1;
+  private shockT = 0;
+  private markT = 0;
+  private statusFxT = 0;
+
   // BOSS
   private phase = 0;
   private patternT = 2;
+  private bossElement: string;
+  private chargeT = 0; private charging = false;
 
   constructor(
     kind: EnemyKind,
@@ -98,6 +109,7 @@ export class Enemy implements EnemyLike {
     const def = ENEMIES[kind];
     this.kind = kind;
     this.name = def.name;
+    this.bossElement = accentOverride ?? KIND_COLORS.boss.accent;
     this.isBoss = kind === 'boss';
     const hpMult = kind === 'boss' ? BOSS_HP_MULT : KIND_HP_MULT[kind];
     this.maxHp = Math.round(def.hp * hpMult * enemyHpMult(chapter));
@@ -198,6 +210,66 @@ export class Enemy implements EnemyLike {
   get object3d(): THREE.Object3D { return this.group; }
   get headHeight(): number { return this.height * 0.9; }
 
+  /** 有效移动速度（含减速状态） */
+  private get effSpeed(): number {
+    return this.speed * (this.slowT > 0 ? this.slowFactor : 1);
+  }
+
+  /** 应用元素状态 */
+  applyStatus(kind: 'burn' | 'slow' | 'shock' | 'mark', duration: number, power: number): void {
+    if (!this.alive) return;
+    switch (kind) {
+      case 'burn':
+        this.burnT = Math.max(this.burnT, duration);
+        this.burnDps = Math.max(this.burnDps, power);
+        break;
+      case 'slow':
+        this.slowT = Math.max(this.slowT, duration);
+        this.slowFactor = Math.min(this.slowFactor === 1 ? power : this.slowFactor, power);
+        break;
+      case 'shock':
+        this.shockT = Math.max(this.shockT, duration);
+        break;
+      case 'mark':
+        this.markT = Math.max(this.markT, duration);
+        break;
+    }
+  }
+
+  private updateStatuses(dt: number): void {
+    if (this.burnT > 0) {
+      this.burnT -= dt;
+      this.burnTick -= dt;
+      if (this.burnTick <= 0) {
+        this.burnTick = 0.5;
+        const dmg = Math.max(1, Math.round(this.burnDps * 0.5));
+        this.applyDamage(dmg, false);
+        if (this.alive) {
+          this.effects.spark(this.pos.clone().setY(this.pos.y + this.height * 0.6), new THREE.Vector3(0, 1, 0), '#ff7a33', 3, 2);
+          this.hooks.onStatusDamage(this.pos, dmg);
+        }
+      }
+    }
+    if (this.slowT > 0) this.slowT -= dt;
+    if (this.markT > 0) this.markT -= dt;
+    if (this.shockT > 0) {
+      this.shockT -= dt;
+      // 感电打断攻击前摇
+      if (this.state === 'windup') {
+        this.state = 'recover';
+        this.stateT = 0.6;
+        for (const m of this.accentMats) m.emissiveIntensity = 1.4;
+      }
+      if (Math.random() < dt * 8) {
+        this.effects.spark(this.pos.clone().setY(this.pos.y + this.height * 0.7), new THREE.Vector3(0, 1, 0), '#ffe95c', 2, 2.5);
+      }
+    }
+    // 状态特效（灼烧余烬）
+    if (this.burnT > 0 && Math.random() < dt * 6) {
+      this.effects.spark(this.pos.clone().setY(this.pos.y + this.height * 0.55), new THREE.Vector3(0, 1, 0), '#ff9a4f', 1, 1.2);
+    }
+  }
+
   hitTest(origin: THREE.Vector3, dir: THREE.Vector3, maxDist: number): { dist: number; isHead: boolean; point: THREE.Vector3 } | null {
     if (!this.alive) return null;
     // 头部球
@@ -224,6 +296,7 @@ export class Enemy implements EnemyLike {
 
   applyDamage(amount: number, isHead: boolean): boolean {
     if (!this.alive) return false;
+    if (this.markT > 0) amount = Math.round(amount * 1.15);
     this.hp -= amount;
     this.flashT = 0.09;
     void isHead;
@@ -264,6 +337,8 @@ export class Enemy implements EnemyLike {
       for (const m of this.bodyMats) m.emissive.setRGB(0, 0, 0);
     }
 
+    this.updateStatuses(dt);
+
     const toPlayer = player.pos.clone().sub(this.pos);
     toPlayer.y = 0;
     const dist = toPlayer.length();
@@ -298,7 +373,7 @@ export class Enemy implements EnemyLike {
       if (dist > this.attackRange * 0.9) {
         const dir = toPlayer.clone().normalize();
         // 与玩家保持最小间距（避免贴脸糊屏）
-        const step = Math.min(this.speed * dt, Math.max(0, dist - 1.35));
+        const step = Math.min(this.effSpeed * dt, Math.max(0, dist - 1.35));
         this.pos.addScaledVector(dir, step);
         // 简单推离静态障碍
         this.resolveStatic();
@@ -329,17 +404,17 @@ export class Enemy implements EnemyLike {
     const preferred = this.attackRange * 0.6;
     if (this.state === 'seek') {
       if (dist > preferred) {
-        this.pos.addScaledVector(toPlayer.clone().normalize(), this.speed * dt);
+        this.pos.addScaledVector(toPlayer.clone().normalize(), this.effSpeed * dt);
         this.resolveStatic();
       } else if (dist < preferred * 0.5) {
-        this.pos.addScaledVector(toPlayer.clone().normalize(), -this.speed * 0.7 * dt);
+        this.pos.addScaledVector(toPlayer.clone().normalize(), -this.effSpeed * 0.7 * dt);
         this.resolveStatic();
       } else {
         // 横向游走
         this.strafeT -= dt;
         if (this.strafeT <= 0) { this.strafeDir *= -1; this.strafeT = 1 + Math.random() * 1.6; }
         const side = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x).normalize();
-        this.pos.addScaledVector(side, this.strafeDir * this.speed * 0.5 * dt);
+        this.pos.addScaledVector(side, this.strafeDir * this.effSpeed * 0.5 * dt);
         this.resolveStatic();
       }
       // 射击
@@ -397,10 +472,31 @@ export class Enemy implements EnemyLike {
     if (newPhase !== this.phase) {
       this.phase = newPhase;
       this.patternT = 1;
-      this.effects.explosion(this.pos.clone().setY(2), 3, KIND_COLORS.boss.accent);
+      this.effects.explosion(this.pos.clone().setY(2), 3.5, this.bossElement);
+      this.audio.explosion();
       for (const m of this.accentMats) m.emissiveIntensity = 3.5;
     }
     const speed = this.speed * (1 + this.phase * 0.35);
+
+    // 三阶段冲锋（虚数/雷电系 BOSS）
+    if (this.charging) {
+      this.chargeT -= dt;
+      const dir = toPlayer.clone().normalize();
+      this.pos.addScaledVector(dir, speed * 3.2 * dt);
+      this.resolveStatic();
+      this.effects.spark(this.pos.clone().setY(1), dir.clone().negate(), this.bossElement, 3, 5);
+      if (this.chargeT <= 0 || dist < 1.6) {
+        this.charging = false;
+        if (dist < 3.5) {
+          const dmg = Math.round(this.damage * 1.6);
+          player.damage(dmg);
+          this.hooks.onPlayerDamaged(dmg, this.pos);
+          this.audio.hurt();
+        }
+        this.effects.explosion(this.pos.clone().setY(0.6), 3, this.bossElement);
+      }
+      return;
+    }
 
     this.patternT -= dt;
     if (dist > this.attackRange) {
@@ -419,13 +515,19 @@ export class Enemy implements EnemyLike {
           const dir = target.clone().sub(from).normalize();
           const side = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
           dir.addScaledVector(side, i * 0.14).normalize();
-          this.fireBolt(from, dir, 24, this.damage, KIND_COLORS.boss.accent);
+          this.fireBolt(from, dir, 24, this.damage, this.bossElement);
         }
         this.audio.enemyShoot();
         this.patternT = 1.6 - this.phase * 0.3;
-      } else if (roll < 0.7 && dist < 8) {
+      } else if (roll < 0.55 && this.phase >= 1 && dist > 6) {
+        // 冲锋（二阶段起）
+        this.charging = true;
+        this.chargeT = 1.4;
+        this.audio.enemyShoot();
+        this.patternT = 3.5;
+      } else if (roll < 0.75 && dist < 8) {
         // 跺地冲击波
-        this.effects.explosion(this.pos.clone().setY(0.3), 4.5, KIND_COLORS.boss.accent);
+        this.effects.explosion(this.pos.clone().setY(0.3), 4.5, this.bossElement);
         this.audio.explosion();
         if (dist < 6) {
           player.damage(Math.round(this.damage * 1.4));
@@ -440,7 +542,7 @@ export class Enemy implements EnemyLike {
           const dir = base.clone();
           const side = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
           dir.addScaledVector(side, i * 0.2).normalize();
-          this.fireBolt(from, dir, 20, this.damage, KIND_COLORS.boss.accent);
+          this.fireBolt(from, dir, 20, this.damage, this.bossElement);
         }
         this.audio.enemyShoot();
         this.patternT = 2 - this.phase * 0.35;

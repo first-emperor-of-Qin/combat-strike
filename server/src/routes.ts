@@ -4,9 +4,9 @@ import {
   hashPassword, verifyPassword, signToken, requireAuth, validateCredentials, type Env,
 } from './auth.js';
 import {
-  WEAPONS, WEAPON_MAP, CHAPTERS, BOSS_CHAPTERS,
+  WEAPONS, WEAPON_MAP, CHAPTERS, BOSS_NAMES,
   killGold, firstClearGold, replayClearGold, clearXp, xpForLevel, playerMaxHp,
-  waveComposition,
+  waveComposition, upgradeCost, UPGRADE_MAX,
 } from '@combat-strike/shared';
 import type { Profile, RunReward } from '@combat-strike/shared';
 
@@ -42,8 +42,8 @@ function getProgressRow(uid: number): ProgressRow | undefined {
 
 function buildProfile(user: UserRow): Profile {
   const p = getProgressRow(user.id);
-  const owned = row<{ weapon_id: string }[]>(
-    db.prepare('SELECT weapon_id FROM user_weapons WHERE user_id = ?').all(user.id),
+  const owned = row<{ weapon_id: string; level: number }[]>(
+    db.prepare('SELECT weapon_id, level FROM user_weapons WHERE user_id = ?').all(user.id),
   );
   const lo = row<{ primary_w: string | null; secondary_w: string | null } | undefined>(
     db.prepare('SELECT primary_w, secondary_w FROM loadout WHERE user_id = ?').get(user.id),
@@ -56,6 +56,7 @@ function buildProfile(user: UserRow): Profile {
     gold: user.gold,
     createdAt: user.created_at,
     ownedWeapons: owned.map((r) => r.weapon_id),
+    upgrades: Object.fromEntries(owned.map((r) => [r.weapon_id, r.level])),
     loadout: { primary: lo?.primary_w ?? null, secondary: lo?.secondary_w ?? null },
     chapterUnlocked: p?.chapter_unlocked ?? 1,
     chapterCleared: JSON.parse(p?.chapter_cleared ?? '[]') as number[],
@@ -132,7 +133,7 @@ app.get('/catalog', (c) => {
   return c.json({
     weapons: WEAPONS,
     chapters: CHAPTERS,
-    bosses: BOSS_CHAPTERS,
+    bosses: BOSS_NAMES,
     maxHpByLevel: Object.fromEntries(
       Array.from({ length: LEVEL_CAP }, (_, i) => [i + 1, playerMaxHp(i + 1)]),
     ),
@@ -173,6 +174,31 @@ app.post('/shop/purchase', async (c) => {
   db.prepare('INSERT INTO user_weapons (user_id, weapon_id, acquired_at) VALUES (?, ?, ?)').run(uid, w.id, Date.now());
   user.gold -= w.price;
   return c.json({ profile: buildProfile(user) });
+});
+
+// ---- 武器强化 ----
+app.post('/shop/upgrade', async (c) => {
+  const body = await c.req.json().catch(() => null) as { weaponId?: unknown } | null;
+  if (!body || typeof body.weaponId !== 'string') return c.json({ error: '参数错误' }, 400);
+  const w = WEAPON_MAP.get(body.weaponId);
+  if (!w) return c.json({ error: '武器不存在' }, 404);
+
+  const uid = c.get('uid');
+  const user = getUser(uid);
+  if (!user) return c.json({ error: '用户不存在' }, 404);
+
+  const cur = row<{ level: number } | undefined>(
+    db.prepare('SELECT level FROM user_weapons WHERE user_id = ? AND weapon_id = ?').get(uid, w.id),
+  );
+  if (!cur) return c.json({ error: '未拥有该武器' }, 403);
+  if (cur.level >= UPGRADE_MAX) return c.json({ error: '已达到最高强化等级' }, 409);
+  const cost = upgradeCost(w.tier, cur.level);
+  if (user.gold < cost) return c.json({ error: '金币不足' }, 402);
+
+  db.prepare('UPDATE users SET gold = gold - ? WHERE id = ?').run(cost, uid);
+  db.prepare('UPDATE user_weapons SET level = level + 1 WHERE user_id = ? AND weapon_id = ?').run(uid, w.id);
+  user.gold -= cost;
+  return c.json({ profile: buildProfile(user), upgradedTo: cur.level + 1, cost });
 });
 
 // ---- 配装保存 ----
@@ -239,7 +265,7 @@ app.post('/run/complete', async (c) => {
     const comp = waveComposition(chapter, wv, chap.waves);
     for (const n of Object.values(comp)) maxKills += n ?? 0;
   }
-  if (BOSS_CHAPTERS[chapter]) maxKills += 1;
+  if (BOSS_NAMES[chapter]) maxKills += 1;
   maxKills = Math.ceil(maxKills * KILLS_PER_WAVE_SLACK);
   const safeKills = Math.min(kills, maxKills);
 

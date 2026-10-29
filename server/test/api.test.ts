@@ -167,6 +167,34 @@ describe('战局结算与反作弊', () => {
   });
 });
 
+describe('武器强化', () => {
+  it('未拥有武器不能强化', async () => {
+    const u = await register(`强化${Date.now()}`);
+    const res = await app.request('/shop/upgrade', {
+      method: 'POST', headers: auth(u),
+      body: JSON.stringify({ weaponId: 'po-hong' }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('初始武器可强化，金币扣减与等级递增正确', async () => {
+    const u = await register(`强化OK${Date.now()}`);
+    const before = await (await app.request('/me', { headers: auth(u) })).json() as { profile: { gold: number; upgrades: Record<string, number> } };
+    expect(before.profile.upgrades['thunder-mk1']).toBe(0);
+
+    const res = await app.request('/shop/upgrade', {
+      method: 'POST', headers: auth(u),
+      body: JSON.stringify({ weaponId: 'thunder-mk1' }),
+    });
+    const d = await res.json() as { profile: { gold: number; upgrades: Record<string, number> }; upgradedTo: number; cost: number };
+    expect(d.upgradedTo).toBe(1);
+    expect(d.profile.upgrades['thunder-mk1']).toBe(1);
+    // T1 L0→1 成本 300
+    expect(d.cost).toBe(300);
+    expect(d.profile.gold).toBe(before.profile.gold - 300);
+  });
+});
+
 describe('配装', () => {
   it('只能装备已拥有的武器', async () => {
     const u = await register(`配装${Date.now()}`);

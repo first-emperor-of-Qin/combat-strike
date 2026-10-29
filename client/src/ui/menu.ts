@@ -3,8 +3,9 @@ import { api, isOffline } from '../api.js';
 import {
   WEAPON_CLASS_LABELS, TIER_LABELS, TIER_COLORS,
   firstClearGold, replayClearGold, clearXp, tierDps,
+  upgradeCost, upgradeDamageMult, UPGRADE_MAX,
 } from '@combat-strike/shared';
-import type { Profile, WeaponDef, ChapterDef } from '@combat-strike/shared';
+import type { Profile, WeaponDef, ChapterDef, BossInfo } from '@combat-strike/shared';
 import type { Settings } from '../config.js';
 import { saveSettings, loadSettings } from '../config.js';
 
@@ -33,7 +34,7 @@ export class MainMenu {
   private profile: Profile;
   private weapons: WeaponDef[];
   private chapters: ChapterDef[];
-  private bosses: Record<string, string>;
+  private bosses: Record<number, BossInfo>;
   private xpNeeded: number;
   private cb: MenuCallbacks;
   private settings: Settings;
@@ -46,7 +47,7 @@ export class MainMenu {
   constructor(
     parent: HTMLElement,
     profile: Profile,
-    catalog: { weapons: WeaponDef[]; chapters: ChapterDef[]; bosses: Record<string, string> },
+    catalog: { weapons: WeaponDef[]; chapters: ChapterDef[]; bosses: Record<number, BossInfo> },
     xpNeeded: number,
     settings: Settings,
     cb: MenuCallbacks,
@@ -146,7 +147,7 @@ export class MainMenu {
       const cleared = this.profile.chapterCleared.includes(ch.id);
       const locked = ch.id > this.profile.chapterUnlocked;
       const isNext = ch.id === this.profile.chapterUnlocked && !cleared;
-      const boss = this.bosses[String(ch.id)];
+      const boss = this.bosses[ch.id];
       const reward = cleared ? replayClearGold(ch.id) : firstClearGold(ch.id);
 
       const card = el('div', {
@@ -237,6 +238,7 @@ export class MainMenu {
   }
 
   private weaponCard(w: WeaponDef, context: 'arsenal' | 'shop'): HTMLElement {
+    const upgradeLvl = this.profile.upgrades?.[w.id] ?? 0;
     const owned = this.profile.ownedWeapons.includes(w.id);
     const equippedPrimary = this.profile.loadout.primary === w.id;
     const equippedSecondary = this.profile.loadout.secondary === w.id;
@@ -279,6 +281,28 @@ export class MainMenu {
         },
       }, '装备为副武器');
       actions.append(equipBtn, equipSub);
+
+      // 强化按钮（养成核心）
+      if (upgradeLvl < UPGRADE_MAX) {
+        const cost = upgradeCost(w.tier, upgradeLvl);
+        actions.appendChild(el('button', {
+          class: 'btn upgrade',
+          onclick: async (e) => {
+            const btn = e.currentTarget as HTMLButtonElement;
+            btn.disabled = true;
+            try {
+              const r = await api.upgrade(w.id);
+              this.profile = r.profile;
+              this.updateProfile(r.profile, this.xpNeeded);
+              this.renderTab('arsenal');
+            } catch (err) {
+              showCardError(card, err instanceof Error ? err.message : '强化失败');
+            } finally { btn.disabled = false; }
+          },
+        }, `强化 +${upgradeLvl}→+${upgradeLvl + 1} · ¥${fmtGold(cost)}`));
+      } else {
+        actions.appendChild(el('span', { class: 'w-maxed' }, '已满强化 +10'));
+      }
     } else if (context === 'shop') {
       actions.appendChild(el('button', {
         class: 'btn primary',
@@ -298,15 +322,23 @@ export class MainMenu {
     }
 
     const card = el('div', { class: `weapon-card tier-${w.tier} ${owned ? 'owned' : ''} ${equippedPrimary || equippedSecondary ? 'equipped' : ''}` },
-      el('span', { class: 'w-badge' }, `${TIER_LABELS[w.tier]} · ${w.tier}级`),
-      el('div', { class: 'w-name', style: `color:${color}` }, w.name),
+      el('span', { class: 'w-badge' }, upgradeLvl > 0 ? `${TIER_LABELS[w.tier]} · ${w.tier}级 · +${upgradeLvl}` : `${TIER_LABELS[w.tier]} · ${w.tier}级`),
+      el('div', { class: 'w-name', style: `color:${color}` }, w.name, upgradeLvl > 0 ? el('span', { style: 'font-size:13px;margin-left:6px' }, `+${upgradeLvl}`) : null),
       el('div', { class: 'w-class' }, `${WEAPON_CLASS_LABELS[w.class]} · ${w.enName}`),
       el('div', { class: 'w-desc' }, w.desc),
+      // 技能与被动（养成系核心展示）
+      el('div', { class: 'w-skill' },
+        el('span', { class: 'ws-tag active' }, `技能 · ${w.skill.name}`),
+        el('span', { class: 'ws-desc' }, `${w.skill.desc}（冷却 ${w.skill.cooldown}s）`),
+      ),
+      el('div', { class: 'w-skill' },
+        el('span', { class: 'ws-tag passive' }, `被动 · ${w.passive.name}`),
+        el('span', { class: 'ws-desc' }, w.passive.desc),
+      ),
       el('div', { class: 'w-stats' },
-        el('span', {}, '伤害 ', el('b', {}, String(w.damage), w.pellets > 1 ? ` ×${w.pellets}` : '')),
+        el('span', {}, '伤害 ', el('b', {}, String(w.damage), w.pellets > 1 ? ` ×${w.pellets}` : '', upgradeLvl > 0 ? ` → ${Math.round(w.damage * upgradeDamageMult(upgradeLvl))}` : '')),
         el('span', {}, '射速 ', el('b', {}, `${w.rpm}/分`)),
         el('span', {}, '弹匣 ', el('b', {}, String(w.mag))),
-        el('span', {}, '换弹 ', el('b', {}, `${w.reloadTime}s`)),
         el('span', {}, '爆头 ', el('b', {}, `×${w.headshotMult}`)),
         el('span', {}, '移速 ', el('b', {}, `×${w.moveMult}`)),
       ),

@@ -218,3 +218,16 @@
   border: 1px solid rgba(255, 56, 96, 0.4);
   border-radius: 2px;
 }
+
+/* 武器技能/被动与强化 */
+.w-skill { display: flex; gap: 8px; align-items: baseline; margin-top: 4px; }
+.ws-tag {
+  flex-shrink: 0; font-size: 11px; padding: 2px 7px; letter-spacing: 1px;
+  border-radius: 2px; border: 1px solid;
+}
+.ws-tag.active { color: var(--accent-2); border-color: rgba(255,176,32,0.5); background: rgba(255,176,32,0.07); }
+.ws-tag.passive { color: #7aa8ff; border-color: rgba(122,168,255,0.5); background: rgba(122,168,255,0.07); }
+.ws-desc { font-size: 12px; color: var(--text-1); line-height: 1.5; }
+.btn.upgrade { border-color: rgba(255, 215, 92, 0.5); color: var(--gold); }
+.btn.upgrade:hover { border-color: var(--gold); color: var(--gold); background: rgba(255,215,92,0.08); }
+.w-maxed { font-size: 12px; color: var(--gold); letter-spacing: 1px; align-self: center; }

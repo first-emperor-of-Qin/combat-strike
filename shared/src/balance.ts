@@ -22,6 +22,19 @@ export function tierReqLevel(tier: Tier): number {
   return Math.max(1, tier * 3 - 2);
 }
 
+/** 武器强化等级上限 */
+export const UPGRADE_MAX = 10;
+
+/** 强化到 level 级所需金币（level = 当前等级，目标 level+1） */
+export function upgradeCost(tier: Tier, level: number): number {
+  return Math.round((300 * Math.pow(1.9, tier - 1) * Math.pow(1.55, level)) / 100) * 100;
+}
+
+/** 强化伤害倍率（每级 +6%，满级 +60%） */
+export function upgradeDamageMult(level: number): number {
+  return 1 + 0.06 * level;
+}
+
 /** 章节杂兵基准生命（grunt） */
 export function chapterGruntHp(chapter: number): number {
   return Math.round(55 * Math.pow(1.8, chapter - 1));
@@ -131,11 +144,19 @@ export const CHAPTERS: ChapterDef[] = [
     groundColor: '#0e242e', wallColor: '#0a1a22', accentColor: '#7df9ff' },
 ];
 
-/** 拥有 BOSS 的章节 */
-export const BOSS_CHAPTERS: Record<number, string> = {
-  3: '寒霜巨兽',
-  6: '熔岩魔像',
-  9: '虚数主宰',
+/** 每章终波 BOSS（名称随章节元素主题） */
+export interface BossInfo { name: string; enName: string; element: 'fire' | 'ice' | 'lightning' | 'void' | 'holy' | 'none'; scale: number }
+
+export const BOSS_NAMES: Record<number, BossInfo> = {
+  1: { name: '掠夺者机甲', enName: 'Marauder Mech', element: 'none', scale: 1.0 },
+  2: { name: '霓虹刺客', enName: 'Neon Reaper', element: 'lightning', scale: 0.92 },
+  3: { name: '寒霜巨兽', enName: 'Frost Behemoth', element: 'ice', scale: 1.1 },
+  4: { name: '赤沙巨像', enName: 'Crimson Colossus', element: 'fire', scale: 1.05 },
+  5: { name: '深渊吞噬者', enName: 'Abyss Devourer', element: 'void', scale: 1.0 },
+  6: { name: '熔岩魔像', enName: 'Magma Golem', element: 'fire', scale: 1.15 },
+  7: { name: '轨道执政官', enName: 'Orbital Archon', element: 'lightning', scale: 0.95 },
+  8: { name: '虚空之眼', enName: 'Void Watcher', element: 'void', scale: 1.0 },
+  9: { name: '虚数主宰', enName: 'Null Sovereign', element: 'void', scale: 1.25 },
 };
 
 // ============================================================

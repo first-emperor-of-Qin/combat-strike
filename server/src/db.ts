@@ -60,6 +60,14 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_runs_user ON runs(user_id, chapter, created_at);
 `);
 
+// ---- 迁移：武器强化等级（对既有库安全） ----
+{
+  const cols = db.prepare("PRAGMA table_info(user_weapons)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === 'level')) {
+    db.exec('ALTER TABLE user_weapons ADD COLUMN level INTEGER NOT NULL DEFAULT 0');
+  }
+}
+
 /** 新用户初始化：赠送初始武器 + 默认配装 */
 export function initNewUser(userId: number): void {
   const now = Date.now();

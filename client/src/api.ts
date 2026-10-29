@@ -1,4 +1,6 @@
-import type { AuthResponse, Profile, RunReward, WeaponDef, ChapterDef } from '@combat-strike/shared';
+import type { AuthResponse, Profile, RunReward, WeaponDef, ChapterDef, BossInfo } from '@combat-strike/shared';
+
+export interface Catalog { weapons: WeaponDef[]; chapters: ChapterDef[]; bosses: Record<number, BossInfo> }
 
 /**
  * API 客户端。
@@ -67,6 +69,7 @@ function emptyDemoProfile(): Profile {
   return {
     id: 0, username: '访客', level: 1, xp: 0, gold: 1500, createdAt: Date.now(),
     ownedWeapons: ['thunder-mk1', 'shadow-smg'],
+    upgrades: {},
     loadout: { primary: 'thunder-mk1', secondary: 'shadow-smg' },
     chapterUnlocked: 1, chapterCleared: [],
     stats: { kills: 0, deaths: 0, runs: 0, bestWave: 0, playtimeSec: 0 },
@@ -149,13 +152,13 @@ export const api = {
     return request('GET', '/me');
   },
 
-  async catalog(): Promise<{ weapons: WeaponDef[]; chapters: ChapterDef[]; bosses: Record<string, string> }> {
+  async catalog(): Promise<Catalog> {
     try {
       return await request('GET', '/catalog');
     } catch {
       // 离线降级：直接 import shared 数据（构建期内联）
       const shared = await import('@combat-strike/shared');
-      return { weapons: shared.WEAPONS, chapters: shared.CHAPTERS, bosses: shared.BOSS_CHAPTERS };
+      return { weapons: shared.WEAPONS, chapters: shared.CHAPTERS, bosses: shared.BOSS_NAMES };
     }
   },
 
@@ -175,6 +178,26 @@ export const api = {
       return { profile };
     }
     return request('POST', '/shop/purchase', { weaponId });
+  },
+
+  async upgrade(weaponId: string): Promise<{ profile: Profile; upgradedTo: number; cost: number }> {
+    if (offlineMode || getToken() === 'demo') {
+      const st = loadDemo();
+      const profile = st?.profile ?? emptyDemoProfile();
+      const shared = await import('@combat-strike/shared');
+      const w = shared.WEAPON_MAP.get(weaponId);
+      if (!w) throw new ApiError('武器不存在', 404);
+      if (!profile.ownedWeapons.includes(weaponId)) throw new ApiError('未拥有该武器', 403);
+      const cur = profile.upgrades[weaponId] ?? 0;
+      if (cur >= shared.UPGRADE_MAX) throw new ApiError('已达到最高强化等级', 409);
+      const cost = shared.upgradeCost(w.tier, cur);
+      if (profile.gold < cost) throw new ApiError('金币不足', 402);
+      profile.gold -= cost;
+      profile.upgrades[weaponId] = cur + 1;
+      saveDemo(profile);
+      return { profile, upgradedTo: cur + 1, cost };
+    }
+    return request('POST', '/shop/upgrade', { weaponId });
   },
 
   async saveLoadout(primary: string | null, secondary: string | null): Promise<{ profile: Profile }> {

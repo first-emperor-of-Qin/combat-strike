@@ -13,6 +13,36 @@ export type WeaponClass =
 /** 品级（1 最基础 ~ 9 最强） */
 export type Tier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
+/** 元素属性（决定弹道特效与命中状态效果） */
+export type Element = 'none' | 'fire' | 'ice' | 'lightning' | 'void' | 'holy';
+
+/** 主动技能类型（客户端实现对应效果，中键/F 释放） */
+export type SkillType =
+  | 'powerShot'      // 强化弹：接下来数发伤害倍增+穿透
+  | 'shadowstep'     // 影遁：短时加速+减伤
+  | 'overdrive'      // 狂暴：短时射速大幅提升
+  | 'fireNova'       // 红莲爆裂：以自身为中心的火焰新星
+  | 'frostField'     // 冰封领域：持续减速+冰伤区域
+  | 'chainLightning' // 雷链：跳跃命中多个敌人
+  | 'barrage'        // 弹幕：多枚追踪弹齐射
+  | 'blink'          // 相位闪现：向前瞬移
+  | 'railBeam'       // 贯空光束：全屏贯穿射线
+  | 'blackhole'      // 奇点坍缩：牵引+持续伤害黑洞
+  | 'healBurst';     // 圣光解放：治疗+范围圣光伤害
+
+export interface WeaponSkill {
+  type: SkillType;
+  name: string;
+  /** 冷却（秒） */
+  cooldown: number;
+  desc: string;
+}
+
+export interface WeaponPassive {
+  name: string;
+  desc: string;
+}
+
 /** 武器静态数据（服务端权威，客户端只读渲染） */
 export interface WeaponDef {
   id: string;
@@ -70,6 +100,12 @@ export interface WeaponDef {
   desc: string;
   /** 特效主题色（十六进制） */
   accent: string;
+  /** 元素属性 */
+  element: Element;
+  /** 主动技能 */
+  skill: WeaponSkill;
+  /** 被动特性 */
+  passive: WeaponPassive;
 }
 
 /** 敌人种类 */
@@ -145,6 +181,8 @@ export interface Profile {
   gold: number;
   createdAt: number;
   ownedWeapons: string[];
+  /** 武器强化等级（weaponId → 0~10） */
+  upgrades: Record<string, number>;
   loadout: { primary: string | null; secondary: string | null };
   chapterUnlocked: number;
   chapterCleared: number[];

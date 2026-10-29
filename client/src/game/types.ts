@@ -10,6 +10,8 @@ export interface EnemyLike {
   radius: number;
   height: number;
   isBoss: boolean;
+  hp: number;
+  maxHp: number;
   /** 射线命中测试：返回距离/是否爆头/命中点 */
   hitTest(origin: THREE.Vector3, dir: THREE.Vector3, maxDist: number): { dist: number; isHead: boolean; point: THREE.Vector3 } | null;
   /** 受击，返回是否死亡 */
@@ -29,4 +31,8 @@ export interface HudHooks {
   crosshairSpread(spreadPx: number): void;
   announce(text: string, sub?: string): void;
   gold(amount: number): void;
+  /** 武器技能状态（名称/冷却比例/是否就绪） */
+  setSkill(name: string, cdFrac: number, ready: boolean): void;
+  /** 连击显示（count<2 隐藏；lifeK 为连击窗口剩余比例） */
+  combo(count: number, lifeK: number): void;
 }
